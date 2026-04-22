@@ -74,6 +74,20 @@ struct PatchCable
     bool       enabled = true;
 };
 
+enum class XTModDestination
+{
+    Off = 0,
+    Cutoff,
+    Resonance,
+    FmAmount,
+    NoiseLevel,
+    VcfDecay,
+    VcaDecay,
+    VcoDecay,
+    Volume,
+    Count
+};
+
 // =============================================================================
 
 class XTProcessor : public juce::AudioProcessor
@@ -105,6 +119,7 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    static juce::StringArray getModDestinationNames();
 
     juce::StringArray getAvailablePresetNames() const;
     juce::String getCurrentPresetName() const;

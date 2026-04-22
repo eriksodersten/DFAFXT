@@ -105,6 +105,8 @@ private:
     // Row 2
     juce::Slider fmAmount, vco2EgAmount, vco2Frequency;
     juce::Slider vco2Level, vcfDecay, vcfEgAmount, noiseVcfMod, vcaDecay;
+    juce::ComboBox modDestBox[3];
+    juce::Slider modAmount[3];
 
     // Sequencer
         juce::ComboBox clockMultBox;
@@ -149,6 +151,8 @@ private:
     std::unique_ptr<SliderAttachment> noiseLevelAtt, cutoffAtt, resonanceAtt;
     std::unique_ptr<SliderAttachment> vcfDecayAtt, vcfEgAmtAtt, noiseVcfModAtt;
     std::unique_ptr<SliderAttachment> vcaDecayAtt, vcaEgAtt, volumeAtt;        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> clockMultBoxAtt;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modDestBoxAtt[3];
+        std::unique_ptr<SliderAttachment> modAmountAtt[3];
         std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps], stepVelAtt[XTSequencer::numSteps];
         std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps], stepModBAtt[XTSequencer::numSteps], stepModCAtt[XTSequencer::numSteps];
 

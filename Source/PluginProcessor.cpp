@@ -6,16 +6,48 @@ namespace
 constexpr auto kInitPresetName = "Init";
 constexpr auto kPresetExtension = ".dfafxtpreset";
 constexpr auto kPresetNameAttribute = "currentPresetName";
+constexpr int kNumModRoutes = 3;
 
 juce::String makeStepParameterId(const char* prefix, int index)
 {
     return juce::String(prefix) + juce::String(index);
 }
 
+juce::String makeModDestinationParameterId(int index)
+{
+    return "mod" + juce::String::charToString((juce_wchar) ('A' + index)) + "Dest";
+}
+
+juce::String makeModAmountParameterId(int index)
+{
+    return "mod" + juce::String::charToString((juce_wchar) ('A' + index)) + "Amt";
+}
+
 float centredSequencerMod(float value)
 {
     return juce::jlimit(-1.0f, 1.0f, value * 2.0f - 1.0f);
 }
+
+XTModDestination choiceToModDestination(int rawChoice)
+{
+    const int clamped = juce::jlimit(0, (int) XTModDestination::Count - 1, rawChoice);
+    return static_cast<XTModDestination>(clamped);
+}
+}
+
+juce::StringArray XTProcessor::getModDestinationNames()
+{
+    return {
+        "OFF",
+        "CUTOFF",
+        "RESONANCE",
+        "FM AMT",
+        "NOISE",
+        "VCF DEC",
+        "VCA DEC",
+        "VCO DEC",
+        "VOLUME"
+    };
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameterLayout()
@@ -55,6 +87,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     params.push_back(std::make_unique<juce::AudioParameterFloat>("vcaEg",       "VCA EG",        0.0f,  1.0f,    0.5f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("preTrim",     "Pre Trim",      0.1f,  2.0f,    0.84f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("volume",      "Volume",        0.0f,  1.0f,    0.8f));
+    for (int i = 0; i < kNumModRoutes; ++i)
+    {
+        const auto sourceName = "Mod " + juce::String::charToString((juce_wchar) ('A' + i));
+        params.push_back(std::make_unique<juce::AudioParameterChoice>(
+            makeModDestinationParameterId(i), sourceName + " Destination", getModDestinationNames(), 0));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            makeModAmountParameterId(i), sourceName + " Amount", 0.0f, 1.0f, 0.5f));
+    }
     params.push_back(std::make_unique<juce::AudioParameterChoice>("clockMult", "Clock Multiplier",
                 juce::StringArray({ "1/8", "1/5", "1/4", "1/3", "1/2", "1x", "2x", "3x", "4x", "5x" }), 5));
     for (int i = 0; i < XTSequencer::numSteps; ++i)
@@ -578,6 +618,13 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     float vcaDecayVal = apvts.getRawParameterValue("vcaDecay")->load();
     float vcfDecayVal = apvts.getRawParameterValue("vcfDecay")->load();
     float fmVal       = apvts.getRawParameterValue("fmAmount")->load();
+    std::array<XTModDestination, kNumModRoutes> modDestinations;
+    std::array<float, kNumModRoutes> modAmounts {};
+    for (int i = 0; i < kNumModRoutes; ++i)
+    {
+        modDestinations[(size_t) i] = choiceToModDestination((int) apvts.getRawParameterValue(makeModDestinationParameterId(i))->load());
+        modAmounts[(size_t) i] = apvts.getRawParameterValue(makeModAmountParameterId(i))->load();
+    }
     float vco1Freq       = apvts.getRawParameterValue("vco1Freq")->load();
         float vco2Freq       = apvts.getRawParameterValue("vco2Freq")->load();
         int   seqPitchRouting = (int)apvts.getRawParameterValue("seqPitchMod")->load();
@@ -696,6 +743,41 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         auto frame = voice.processFrame();
         float cutoffNow = smoothedCutoff.getNextValue();
         float volumeNow = smoothedVolume.getNextValue();
+        float directCutoffMod = 0.0f;
+        float directResonanceMod = 0.0f;
+        float directFmMod = 0.0f;
+        float directNoiseMod = 0.0f;
+        float directVcfDecayMod = 0.0f;
+        float directVcaDecayMod = 0.0f;
+        float directVcoDecayMod = 0.0f;
+        float directVolumeMod = 0.0f;
+
+        auto applySequencerMod = [&](float signal, XTModDestination destination, float amount)
+        {
+            const float contribution = signal * amount;
+
+            switch (destination)
+            {
+                case XTModDestination::Off:       break;
+                case XTModDestination::Cutoff:    directCutoffMod    += contribution; break;
+                case XTModDestination::Resonance: directResonanceMod += contribution; break;
+                case XTModDestination::FmAmount:  directFmMod        += contribution; break;
+                case XTModDestination::NoiseLevel:directNoiseMod     += contribution; break;
+                case XTModDestination::VcfDecay:  directVcfDecayMod  += contribution; break;
+                case XTModDestination::VcaDecay:  directVcaDecayMod  += contribution; break;
+                case XTModDestination::VcoDecay:  directVcoDecayMod  += contribution; break;
+                case XTModDestination::Volume:    directVolumeMod    += contribution; break;
+                case XTModDestination::Count:     break;
+            }
+        };
+
+        applySequencerMod(currentModA, modDestinations[0], modAmounts[0]);
+        applySequencerMod(currentModB, modDestinations[1], modAmounts[1]);
+        applySequencerMod(currentModC, modDestinations[2], modAmounts[2]);
+        cutoffNow = juce::jlimit(20.0f, 20000.0f, cutoffNow * std::pow(2.0f, directCutoffMod * 2.0f));
+        volumeNow = juce::jlimit(0.0f, 1.0f, volumeNow + directVolumeMod * 0.5f);
+        const float resonanceNow = juce::jlimit(0.0f, 1.0f, resVal + directResonanceMod * 0.5f);
+        filter.setResonance(resonanceNow);
 
         // --- Patch engine -------------------------------------------
         for (int p = 0; p < PP_NUM_POINTS; ++p) patchInputSums[p] = 0.0f;
@@ -717,18 +799,19 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
 
         // FM amount: additive CV, clamped 0..1
         voice.setFmAmount(hasFmAmtCable
-            ? juce::jlimit(0.0f, 1.0f, fmVal + patchInputSums[PP_FM_AMT])
-            : fmVal);
+            ? juce::jlimit(0.0f, 1.0f, fmVal + directFmMod + patchInputSums[PP_FM_AMT])
+            : juce::jlimit(0.0f, 1.0f, fmVal + directFmMod));
 
         // Noise level: additive CV, clamped 0..1
         voice.setNoiseLevel(hasNoiseLvlCable
-            ? juce::jlimit(0.0f, 1.0f, noiseLevelVal + patchInputSums[PP_NOISE_LVL])
-            : noiseLevelVal);
+            ? juce::jlimit(0.0f, 1.0f, noiseLevelVal + directNoiseMod + patchInputSums[PP_NOISE_LVL])
+            : juce::jlimit(0.0f, 1.0f, noiseLevelVal + directNoiseMod));
 
         // VCF decay: continuous CV from real patch sources in normalised parameter domain
         if (vcfDecayParam != nullptr)
         {
             float norm = vcfDecayParam->convertTo0to1(vcfDecayVal);
+            norm = juce::jlimit(0.0f, 1.0f, norm + directVcfDecayMod * 0.5f);
             if (hasVcfDecayCable)
             {
                 constexpr float vcfDecayCvScale = 0.35f;
@@ -745,6 +828,7 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         if (vcaDecayParam != nullptr)
         {
             float norm = vcaDecayParam->convertTo0to1(vcaDecayVal);
+            norm = juce::jlimit(0.0f, 1.0f, norm + directVcaDecayMod * 0.5f);
             if (hasVcaDecayCable)
             {
                 constexpr float vcaDecayCvScale = 0.35f;
@@ -761,6 +845,7 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         if (vcoDecayParam != nullptr)
         {
             float norm = vcoDecayParam->convertTo0to1(vcoDecayVal);
+            norm = juce::jlimit(0.0f, 1.0f, norm + directVcoDecayMod * 0.5f);
             if (hasVcoDecayCable)
             {
                 constexpr float vcoDecayCvScale = 0.35f;

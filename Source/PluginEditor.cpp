@@ -28,6 +28,11 @@ constexpr int kSequencerLedY = 372;
 constexpr int kSequencerFirstRowY = 388;
 constexpr int kSequencerRowStride = 54;
 constexpr int kSequencerKnobSize = 28;
+constexpr int kModSectionY = 240;
+constexpr int kModAmountY = 236;
+constexpr int kModDestinationY = 274;
+constexpr int kModDestinationWidth = 104;
+constexpr int kModAmountSize = 34;
 
 constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneNames
 {
@@ -37,6 +42,11 @@ constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneNames
 constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneSubtitles
 {
     "semitones", "accent", "bipolar", "bipolar", "bipolar"
+};
+
+constexpr std::array<const char*, 3> kModRouteNames
+{
+    "MOD A", "MOD B", "MOD C"
 };
 
 juce::File getDefaultPresetDirectory()
@@ -49,6 +59,16 @@ juce::File getDefaultPresetDirectory()
 juce::String makeStepParameterId(const char* prefix, int index)
 {
     return juce::String(prefix) + juce::String(index);
+}
+
+juce::String makeModDestinationParameterId(int index)
+{
+    return "mod" + juce::String::charToString((juce_wchar) ('A' + index)) + "Dest";
+}
+
+juce::String makeModAmountParameterId(int index)
+{
+    return "mod" + juce::String::charToString((juce_wchar) ('A' + index)) + "Amt";
 }
 
 constexpr int getSequencerRowY(int row)
@@ -168,6 +188,17 @@ XTEditor::XTEditor(XTProcessor& p)
         vcfModeBox.addItem("HP", 2);
         vcfModeBox.setJustificationType(juce::Justification::centred);
         addAndMakeVisible(vcfModeBox);
+
+    for (int i = 0; i < (int) kModRouteNames.size(); ++i)
+    {
+        modDestBox[i].setJustificationType(juce::Justification::centred);
+        const auto destinationNames = XTProcessor::getModDestinationNames();
+        for (int item = 0; item < destinationNames.size(); ++item)
+            modDestBox[i].addItem(destinationNames[item], item + 1);
+
+        addAndMakeVisible(modDestBox[i]);
+        add(modAmount[i], true);
+    }
     
     add(vco1Level, true); add(noiseLevel, true); add(cutoff); add(resonance); add(vcaEg); add(volume);
     add(fmAmount); add(vco2EgAmount); add(vco2Frequency);
@@ -228,6 +259,16 @@ XTEditor::XTEditor(XTProcessor& p)
     volumeAtt      = std::make_unique<SliderAttachment>(apvts, "volume",      volume);
     clockMultBoxAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
                 apvts, "clockMult", clockMultBox);
+
+    for (int i = 0; i < (int) kModRouteNames.size(); ++i)
+    {
+        const auto modDestId = makeModDestinationParameterId(i);
+        const auto modAmtId  = makeModAmountParameterId(i);
+        modDestBoxAtt[i] = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+            apvts, modDestId, modDestBox[i]);
+        modAmountAtt[i] = std::make_unique<SliderAttachment>(apvts, modAmtId, modAmount[i]);
+        setDoubleClickToDefault(modAmount[i], modAmtId);
+    }
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
@@ -707,6 +748,21 @@ void XTEditor::paint(juce::Graphics& g)
     for (int i = 0; i < 11; ++i)
         g.drawText(bot[i], offX + i * kS, 167, kS, 10, juce::Justification::centred);
 
+    const int modSectionX = offX + 7 * kS;
+    const int modSectionW = mainRight - 20 - modSectionX;
+    const int modColumnW = modSectionW / (int) kModRouteNames.size();
+    g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
+    g.drawText("MOD ROUTING", modSectionX, kModSectionY, modSectionW, 10, juce::Justification::centredLeft);
+    for (int i = 0; i < (int) kModRouteNames.size(); ++i)
+    {
+        const int x = modSectionX + i * modColumnW;
+        g.drawText(kModRouteNames[(size_t) i], x, kModSectionY + 16, modColumnW, 10, juce::Justification::centred);
+        g.setFont(juce::FontOptions(6.5f));
+        g.drawText("AMT", x, kModSectionY + 30, modColumnW, 9, juce::Justification::centred);
+        g.drawText("DEST", x, kModSectionY + 62, modColumnW, 9, juce::Justification::centred);
+        g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
+    }
+
     // Sequencer / transport headers
     g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
     g.drawText("TRANSPORT", transportX, kSequencerHeaderY, kTransportWidth, 10, juce::Justification::centredLeft);
@@ -820,6 +876,16 @@ void XTEditor::resized()
         int r2sizes[] = { kSz,kSz,kSz, sSz,kSz,kSz,kSz,kSz };
     for (int i = 0; i < 8; ++i)
         row2[i]->setBounds(offX + r2slots[i]*kS + (kS-r2sizes[i])/2, 182, r2sizes[i], r2sizes[i]);
+
+    const int modSectionX = offX + 7 * kS;
+    const int modSectionW = mainRight - 20 - modSectionX;
+    const int modColumnW = modSectionW / (int) kModRouteNames.size();
+    for (int i = 0; i < (int) kModRouteNames.size(); ++i)
+    {
+        const int x = modSectionX + i * modColumnW;
+        modAmount[i].setBounds(x + (modColumnW - kModAmountSize) / 2, kModAmountY, kModAmountSize, kModAmountSize);
+        modDestBox[i].setBounds(x + (modColumnW - kModDestinationWidth) / 2, kModDestinationY, kModDestinationWidth, 22);
+    }
 
     // Sequencer
     clockMultBox.setBounds(wood + kTransportOffsetX, 360, kTransportWidth, 22);
