@@ -22,12 +22,13 @@ New XT work belongs in:
 
 ## Current Status
 
-The first XT artifact is the refactor plan:
+Current XT artifacts:
 
 - `DFAF_XT_REFACTOR_PLAN.md`
+- initial JUCE/CMake port of the DFAF core into the XT repo
 
 Next implementation step:
 
-- port the DFAF core into XT as a separate codebase
-- preserve build architecture and DSP baseline
-- then expand the sequencer from `8x2` to `16x5`
+- expand the sequencer from `8x2` to `16x5`
+- introduce `Mod A`, `Mod B`, `Mod C` as real XT lanes
+- reshape the editor toward the XT sketch and panel sections
