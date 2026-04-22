@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Build outputs
+build/
+build-*/
+cmake-build-*/
+
+# JUCE / plugin artifacts
+*.component
+*.vst3
+*.app
+
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcworkspace
+
+# Release bundles
+release/
+
+# Local presets or exports
+Presets/
