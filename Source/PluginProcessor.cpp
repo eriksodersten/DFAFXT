@@ -6,6 +6,16 @@ namespace
 constexpr auto kInitPresetName = "Init";
 constexpr auto kPresetExtension = ".dfafxtpreset";
 constexpr auto kPresetNameAttribute = "currentPresetName";
+
+juce::String makeStepParameterId(const char* prefix, int index)
+{
+    return juce::String(prefix) + juce::String(index);
+}
+
+float centredSequencerMod(float value)
+{
+    return juce::jlimit(-1.0f, 1.0f, value * 2.0f - 1.0f);
+}
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameterLayout()
@@ -47,15 +57,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     params.push_back(std::make_unique<juce::AudioParameterFloat>("volume",      "Volume",        0.0f,  1.0f,    0.8f));
     params.push_back(std::make_unique<juce::AudioParameterChoice>("clockMult", "Clock Multiplier",
                 juce::StringArray({ "1/8", "1/5", "1/4", "1/3", "1/2", "1x", "2x", "3x", "4x", "5x" }), 5));
-    for (int i = 0; i < 8; ++i)
-        {
-            params.push_back(std::make_unique<juce::AudioParameterFloat>(
-                            "stepPitch"    + juce::String(i), "Step Pitch "    + juce::String(i+1), 0.0f, 120.0f, 60.0f));
-            params.push_back(std::make_unique<juce::AudioParameterFloat>(
-                "stepVel"      + juce::String(i), "Step Velocity " + juce::String(i+1), 0.0f,  1.0f,  0.8f));
-        }
-        params.push_back(std::make_unique<juce::AudioParameterChoice>("seqPitchMod", "SEQ Pitch Mod",
-            juce::StringArray({ "VCO 1&2", "OFF", "VCO 2" }), 0));
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        const auto stepNumber = juce::String(i + 1);
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            makeStepParameterId("stepPitch", i), "Step Pitch " + stepNumber, 0.0f, 120.0f, 60.0f));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            makeStepParameterId("stepVel", i), "Step Velocity " + stepNumber, 0.0f, 1.0f, 0.8f));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            makeStepParameterId("stepModA", i), "Step Mod A " + stepNumber, 0.0f, 1.0f, 0.5f));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            makeStepParameterId("stepModB", i), "Step Mod B " + stepNumber, 0.0f, 1.0f, 0.5f));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            makeStepParameterId("stepModC", i), "Step Mod C " + stepNumber, 0.0f, 1.0f, 0.5f));
+    }
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("seqPitchMod", "SEQ Pitch Mod",
+        juce::StringArray({ "VCO 1&2", "OFF", "VCO 2" }), 0));
     params.push_back(std::make_unique<juce::AudioParameterBool>("hardSync", "Hard Sync", false));
     params.push_back(std::make_unique<juce::AudioParameterChoice>("vco1Wave", "VCO 1 Wave",
             juce::StringArray({ "Square", "Triangle" }), 0));
@@ -363,61 +380,51 @@ void XTProcessor::changeProgramName(int index, const juce::String& newName)
 
 void XTProcessor::initialiseMidiCcBindings()
 {
-    struct MidiCcRouteDef
+    midiCcBindings.fill({});
+
+    size_t bindingIndex = 0;
+    auto addBinding = [this, &bindingIndex](int cc, const juce::String& parameterId)
     {
-        int cc;
-        const char* parameterId;
+        jassert(bindingIndex < midiCcBindings.size());
+        auto& binding = midiCcBindings[bindingIndex++];
+        binding.cc = cc;
+        binding.parameter = dynamic_cast<juce::RangedAudioParameter*>(apvts.getParameter(parameterId));
+        jassert(binding.parameter != nullptr);
     };
 
-    constexpr std::array<MidiCcRouteDef, kNumMidiCcBindings> ccRouteDefs {{
-        { 20, "vcoDecay"    },
-        { 21, "vco1EgAmt"   },
-        { 22, "vco1Freq"    },
-        { 23, "vco1Level"   },
-        { 24, "noiseLevel"  },
-        { 25, "cutoff"      },
-        { 26, "resonance"   },
-        { 27, "vcaEg"       },
-        { 28, "volume"      },
-        { 29, "fmAmount"    },
-        { 30, "vco2EgAmt"   },
-        { 31, "vco2Freq"    },
-        { 32, "vco2Level"   },
-        { 33, "vcfDecay"    },
-        { 34, "vcfEgAmt"    },
-        { 35, "noiseVcfMod" },
-        { 36, "vcaDecay"    },
-        { 37, "stepPitch0"  },
-        { 38, "stepPitch1"  },
-        { 39, "stepPitch2"  },
-        { 40, "stepPitch3"  },
-        { 41, "stepPitch4"  },
-        { 42, "stepPitch5"  },
-        { 43, "stepPitch6"  },
-        { 44, "stepPitch7"  },
-        { 45, "stepVel0"    },
-        { 46, "stepVel1"    },
-        { 47, "stepVel2"    },
-        { 48, "stepVel3"    },
-        { 49, "stepVel4"    },
-        { 50, "stepVel5"    },
-        { 51, "stepVel6"    },
-        { 52, "stepVel7"    },
-        { 53, "seqPitchMod" },
-        { 54, "hardSync"    },
-        { 55, "vco1Wave"    },
-        { 56, "vco2Wave"    },
-        { 57, "vcfMode"     },
-        { 58, "clockMult"   }
-    }};
+    addBinding(20, "vcoDecay");
+    addBinding(21, "vco1EgAmt");
+    addBinding(22, "vco1Freq");
+    addBinding(23, "vco1Level");
+    addBinding(24, "noiseLevel");
+    addBinding(25, "cutoff");
+    addBinding(26, "resonance");
+    addBinding(27, "vcaEg");
+    addBinding(28, "volume");
+    addBinding(29, "fmAmount");
+    addBinding(30, "vco2EgAmt");
+    addBinding(31, "vco2Freq");
+    addBinding(32, "vco2Level");
+    addBinding(33, "vcfDecay");
+    addBinding(34, "vcfEgAmt");
+    addBinding(35, "noiseVcfMod");
+    addBinding(36, "vcaDecay");
 
-    for (size_t i = 0; i < ccRouteDefs.size(); ++i)
-    {
-        midiCcBindings[i].cc = ccRouteDefs[i].cc;
-        midiCcBindings[i].parameter =
-            dynamic_cast<juce::RangedAudioParameter*>(apvts.getParameter(ccRouteDefs[i].parameterId));
-        jassert(midiCcBindings[i].parameter != nullptr);
-    }
+    int cc = 37;
+    for (int i = 0; i < XTSequencer::numSteps; ++i) addBinding(cc++, makeStepParameterId("stepPitch", i));
+    for (int i = 0; i < XTSequencer::numSteps; ++i) addBinding(cc++, makeStepParameterId("stepVel",   i));
+    for (int i = 0; i < XTSequencer::numSteps; ++i) addBinding(cc++, makeStepParameterId("stepModA",  i));
+    for (int i = 0; i < XTSequencer::numSteps; ++i) addBinding(cc++, makeStepParameterId("stepModB",  i));
+    for (int i = 0; i < XTSequencer::numSteps; ++i) addBinding(cc++, makeStepParameterId("stepModC",  i));
+
+    addBinding(cc++, "seqPitchMod");
+    addBinding(cc++, "hardSync");
+    addBinding(cc++, "vco1Wave");
+    addBinding(cc++, "vco2Wave");
+    addBinding(cc++, "vcfMode");
+    addBinding(cc++, "clockMult");
+
+    jassert(bindingIndex == midiCcBindings.size());
 }
 
 void XTProcessor::applyMidiCc(int ccNumber, int ccValue)
@@ -581,12 +588,15 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     float vcaEgVal      = apvts.getRawParameterValue("vcaEg")->load();
         float preTrimVal    = apvts.getRawParameterValue("preTrim")->load();
 
-    for (int i = 0; i < 8; ++i)
-        {
-            float pitch = apvts.getRawParameterValue("stepPitch" + juce::String(i))->load();
-            float vel   = apvts.getRawParameterValue("stepVel"   + juce::String(i))->load();
-            sequencer.setStep(i, pitch, vel);
-        }
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        const float pitch = apvts.getRawParameterValue(makeStepParameterId("stepPitch", i))->load();
+        const float vel   = apvts.getRawParameterValue(makeStepParameterId("stepVel",   i))->load();
+        const float modA  = apvts.getRawParameterValue(makeStepParameterId("stepModA",  i))->load();
+        const float modB  = apvts.getRawParameterValue(makeStepParameterId("stepModB",  i))->load();
+        const float modC  = apvts.getRawParameterValue(makeStepParameterId("stepModC",  i))->load();
+        sequencer.setStep(i, pitch, vel, modA, modB, modC);
+    }
 
         filter.setResonance(resVal);
     // VCO/VCA/VCF decay and FM amount applied per-sample after cable snapshot – see below
@@ -659,8 +669,14 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
                 const auto& step = sequencer.getStep(currentStep);
                 currentVelocity = step.velocity;
                 currentPitch    = (step.pitch - 60.0f) / 60.0f;
+                currentModA     = centredSequencerMod(step.modA);
+                currentModB     = centredSequencerMod(step.modB);
+                currentModC     = centredSequencerMod(step.modC);
                 patchSourceValues[PP_VELOCITY] = currentVelocity;
                 patchSourceValues[PP_PITCH]    = currentPitch;
+                patchSourceValues[PP_MOD_A]    = currentModA;
+                patchSourceValues[PP_MOD_B]    = currentModB;
+                patchSourceValues[PP_MOD_C]    = currentModC;
                 voice.trigger(step.pitch, step.velocity);
             }
         }
@@ -687,6 +703,9 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         patchSourceValues[PP_VCA_EG]   = frame.ampGain;
         patchSourceValues[PP_VELOCITY] = currentVelocity;
         patchSourceValues[PP_PITCH]    = currentPitch;
+        patchSourceValues[PP_MOD_A]    = currentModA;
+        patchSourceValues[PP_MOD_B]    = currentModB;
+        patchSourceValues[PP_MOD_C]    = currentModC;
         patchSourceValues[PP_VCO_EG]   = frame.vcoEnv;
         patchSourceValues[PP_VCO1]     = frame.vco1Raw;
         patchSourceValues[PP_VCO2]     = frame.vco2Raw;

@@ -5,17 +5,55 @@ static const juce::Colour labelBlack = juce::Colour(0xff111111);
 
 namespace
 {
-constexpr int kEditorBodyHeight = 480;
+constexpr int kEditorWidth = 1760;
+constexpr int kEditorBodyHeight = 690;
 constexpr int kPresetFooterHeight = 36;
 constexpr int kPresetInitId = 1;
 constexpr int kPresetFirstUserId = 2;
 constexpr int kPresetMissingId = 999;
+constexpr int kTopControlDividerY = 160;
+constexpr int kSequencerDividerY = 308;
+constexpr int kJackPanelWidth = 200;
+constexpr int kJackInputOffsetX = 32;
+constexpr int kJackOutputOffsetX = 168;
+constexpr int kJackStartY = 34;
+constexpr int kJackStride = 32;
+constexpr int kTransportOffsetX = 24;
+constexpr int kTransportWidth = 120;
+constexpr int kRowLabelOffsetX = 118;
+constexpr int kSequencerGridOffsetX = 220;
+constexpr int kSequencerHeaderY = 316;
+constexpr int kSequencerStepNumberY = 338;
+constexpr int kSequencerLedY = 372;
+constexpr int kSequencerFirstRowY = 388;
+constexpr int kSequencerRowStride = 54;
+constexpr int kSequencerKnobSize = 28;
+
+constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneNames
+{
+    "PITCH", "VELOCITY", "MOD A", "MOD B", "MOD C"
+};
+
+constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneSubtitles
+{
+    "semitones", "accent", "bipolar", "bipolar", "bipolar"
+};
 
 juce::File getDefaultPresetDirectory()
 {
     return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
         .getChildFile("DFAFXT")
         .getChildFile("Presets");
+}
+
+juce::String makeStepParameterId(const char* prefix, int index)
+{
+    return juce::String(prefix) + juce::String(index);
+}
+
+constexpr int getSequencerRowY(int row)
+{
+    return kSequencerFirstRowY + row * kSequencerRowStride;
 }
 
 bool cableSnapshotsEqual(const std::vector<PatchCable>& a, const std::vector<PatchCable>& b)
@@ -38,7 +76,7 @@ bool cableSnapshotsEqual(const std::vector<PatchCable>& a, const std::vector<Pat
 XTEditor::XTEditor(XTProcessor& p)
     : AudioProcessorEditor(&p), xtProcessor(p)
 {
-    setSize(1400, kEditorBodyHeight + kPresetFooterHeight);
+    setSize(kEditorWidth, kEditorBodyHeight + kPresetFooterHeight);
     setLookAndFeel(&laf);
     startTimerHz(30);
 
@@ -145,7 +183,14 @@ XTEditor::XTEditor(XTProcessor& p)
         clockMultBox.addItem("5x",  10);
         clockMultBox.setJustificationType(juce::Justification::centred);
         addAndMakeVisible(clockMultBox);
-    for (int i = 0; i < 8; ++i) { add(stepPitch[i], true); add(stepVelocity[i], true); }
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        add(stepPitch[i], true);
+        add(stepVelocity[i], true);
+        add(stepModA[i], true);
+        add(stepModB[i], true);
+        add(stepModC[i], true);
+    }
 
     auto& apvts = p.apvts;
     auto setDoubleClickToDefault = [&apvts](juce::Slider& slider, const juce::String& parameterId)
@@ -184,15 +229,26 @@ XTEditor::XTEditor(XTProcessor& p)
     clockMultBoxAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
                 apvts, "clockMult", clockMultBox);
 
-        for (int i = 0; i < 8; ++i)
-        {
-            const auto stepPitchId = "stepPitch" + juce::String(i);
-            const auto stepVelId   = "stepVel"   + juce::String(i);
-            stepPitchAtt[i] = std::make_unique<SliderAttachment>(apvts, stepPitchId, stepPitch[i]);
-            stepVelAtt[i]   = std::make_unique<SliderAttachment>(apvts, stepVelId,   stepVelocity[i]);
-            setDoubleClickToDefault(stepPitch[i], stepPitchId);
-            setDoubleClickToDefault(stepVelocity[i], stepVelId);
-        }
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        const auto stepPitchId = makeStepParameterId("stepPitch", i);
+        const auto stepVelId   = makeStepParameterId("stepVel",   i);
+        const auto stepModAId  = makeStepParameterId("stepModA",  i);
+        const auto stepModBId  = makeStepParameterId("stepModB",  i);
+        const auto stepModCId  = makeStepParameterId("stepModC",  i);
+
+        stepPitchAtt[i] = std::make_unique<SliderAttachment>(apvts, stepPitchId, stepPitch[i]);
+        stepVelAtt[i]   = std::make_unique<SliderAttachment>(apvts, stepVelId,   stepVelocity[i]);
+        stepModAAtt[i]  = std::make_unique<SliderAttachment>(apvts, stepModAId,  stepModA[i]);
+        stepModBAtt[i]  = std::make_unique<SliderAttachment>(apvts, stepModBId,  stepModB[i]);
+        stepModCAtt[i]  = std::make_unique<SliderAttachment>(apvts, stepModCId,  stepModC[i]);
+
+        setDoubleClickToDefault(stepPitch[i], stepPitchId);
+        setDoubleClickToDefault(stepVelocity[i], stepVelId);
+        setDoubleClickToDefault(stepModA[i], stepModAId);
+        setDoubleClickToDefault(stepModB[i], stepModBId);
+        setDoubleClickToDefault(stepModC[i], stepModCId);
+    }
 
     vco1EgAmount.setDoubleClickReturnValue(true, 0.0);
     vco2EgAmount.setDoubleClickReturnValue(true, 0.0);
@@ -297,16 +353,16 @@ juce::Point<int> XTEditor::getJackCentre(PatchPoint pp) const
     // Must match drawJackPanel() constants exactly
     const int W     = getWidth();
     const int wood  = 18;
-    const int jackW = 200;
+    const int jackW = kJackPanelWidth;
     const int px    = W - wood - jackW;   // jack panel left edge
     const int py    = 0;                  // jack panel top edge
 
-    const int col1   = px + 32;
-    const int col3   = px + 168;
-    const int startY = py + 34;
-    const int stride = 36;
+    const int col1   = px + kJackInputOffsetX;
+    const int col3   = px + kJackOutputOffsetX;
+    const int startY = py + kJackStartY;
+    const int stride = kJackStride;
 
-    // col1=IN (r0-6), col3=OUT (r0-6)
+    // col1=IN (r0-6), col3=OUT (r0-9)
     switch (pp)
     {
         case PP_VCA_CV:    return { col1, startY + 0 * stride };
@@ -323,6 +379,9 @@ juce::Point<int> XTEditor::getJackCentre(PatchPoint pp) const
         case PP_VCO2:      return { col3, startY + 4 * stride };
         case PP_VELOCITY:  return { col3, startY + 5 * stride };
         case PP_PITCH:     return { col3, startY + 6 * stride };
+        case PP_MOD_A:     return { col3, startY + 7 * stride };
+        case PP_MOD_B:     return { col3, startY + 8 * stride };
+        case PP_MOD_C:     return { col3, startY + 9 * stride };
         case PP_NUM_POINTS:
         default:           return { -1, -1 };
     }
@@ -502,14 +561,17 @@ void XTEditor::drawJackPanel(juce::Graphics& g, int x, int y, int w, int h,
         { kPatchMeta[PP_VCF_DECAY].name }, { "" }, { kPatchMeta[PP_VCO1].name },
         { kPatchMeta[PP_NOISE_LVL].name }, { "" }, { kPatchMeta[PP_VCO2].name },
         { kPatchMeta[PP_VCO_DECAY].name }, { "" }, { kPatchMeta[PP_VELOCITY].name },
-        { kPatchMeta[PP_FM_AMT].name },    { "" }, { kPatchMeta[PP_PITCH].name }
+        { kPatchMeta[PP_FM_AMT].name },    { "" }, { kPatchMeta[PP_PITCH].name },
+        { "" },                            { "" }, { kPatchMeta[PP_MOD_A].name },
+        { "" },                            { "" }, { kPatchMeta[PP_MOD_B].name },
+        { "" },                            { "" }, { kPatchMeta[PP_MOD_C].name }
     };
 
-    const int col1 = x + 32;
-    const int col3 = x + 168;
+    const int col1 = x + kJackInputOffsetX;
+    const int col3 = x + kJackOutputOffsetX;
 
-    const int startY = y + 34;
-    const int stride = 36;
+    const int startY = y + kJackStartY;
+    const int stride = kJackStride;
 
     g.setColour(labelBlack);
     g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
@@ -520,7 +582,7 @@ void XTEditor::drawJackPanel(juce::Graphics& g, int x, int y, int w, int h,
     g.setColour(juce::Colour(0xffc7c3bd));
     g.drawLine((float)(x + 4), (float)(y + 19), (float)(x + w - 4), (float)(y + 19), 1.0f);
 
-    for (int r = 0; r < 7; ++r)
+    for (int r = 0; r < 10; ++r)
     {
         const int idx = r * 3;
         const int jy = startY + r * stride;
@@ -565,7 +627,8 @@ void XTEditor::paint(juce::Graphics& g)
     const int W     = getWidth();
     const int H     = getHeight();
     const int wood  = 18;
-    const int jackW = 200;
+    const int jackW = kJackPanelWidth;
+    const int mainRight = W - wood - jackW;
 
     // Wood panels
     juce::ColourGradient woodGrad(
@@ -609,13 +672,20 @@ void XTEditor::paint(juce::Graphics& g)
 
     // Separator lines
     g.setColour(juce::Colour(0xffbbbbbb));
-    g.drawLine((float)wood, 160.0f, (float)(W-wood-jackW), 160.0f, 0.8f);
-    g.drawLine((float)wood, 308.0f, (float)(W-wood-jackW), 308.0f, 0.8f);
+    g.drawLine((float)wood, (float)kTopControlDividerY, (float)mainRight, (float)kTopControlDividerY, 0.8f);
+    g.drawLine((float)wood, (float)kSequencerDividerY, (float)mainRight, (float)kSequencerDividerY, 0.8f);
     g.drawLine((float)wood, (float)kEditorBodyHeight, (float)(W-wood-jackW), (float)kEditorBodyHeight, 0.8f);
 
     const int mainW = W - wood * 2 - jackW;
     const int kS    = (mainW - 60) / 11;
     const int offX  = wood + 30;
+    const int transportX = wood + kTransportOffsetX;
+    const int rowLabelX = wood + kRowLabelOffsetX;
+    const int seqX = wood + kSequencerGridOffsetX;
+    const int seqW = mainRight - 14 - seqX;
+    const int stepW = seqW / XTSequencer::numSteps;
+    const int firstKnobX = seqX + (stepW - kSequencerKnobSize) / 2;
+    const int rowLabelW = juce::jmax(48, firstKnobX - rowLabelX - 10);
 
     g.setColour(labelBlack);
     g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
@@ -637,76 +707,88 @@ void XTEditor::paint(juce::Graphics& g)
     for (int i = 0; i < 11; ++i)
         g.drawText(bot[i], offX + i * kS, 167, kS, 10, juce::Justification::centred);
 
-    // Sequencer labels
-    const int seqX  = wood + 140;
-    const int stepW = (W - wood - jackW - seqX) / 8;
-    const int firstKnobX = seqX + (stepW - 30) / 2;   // sSz=30
+    // Sequencer / transport headers
     g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
-    g.drawText("SCALE",    wood+30, 314, 90, 10, juce::Justification::centred);
-    g.drawText("PITCH",    wood+30, 333, firstKnobX - (wood+30) - 5, 10, juce::Justification::centredRight);
-    g.drawText("VELOCITY", wood+30, 445, firstKnobX - (wood+30) - 5, 10, juce::Justification::centredRight);
-    for (int i = 0; i < 8; ++i)
-        g.drawText(juce::String(i+1), seqX + i*stepW, 314, stepW, 10, juce::Justification::centred);
+    g.drawText("TRANSPORT", transportX, kSequencerHeaderY, kTransportWidth, 10, juce::Justification::centredLeft);
+    g.drawText("SEQUENCER", rowLabelX, kSequencerHeaderY, 82, 10, juce::Justification::centredLeft);
+    g.setFont(juce::FontOptions(7.0f));
+    g.drawText("16 STEPS  ·  PITCH  ·  VELOCITY  ·  MOD A  ·  MOD B  ·  MOD C",
+               seqX, kSequencerHeaderY, seqW, 10, juce::Justification::centredLeft);
+    g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
+    g.drawText("CLOCK", transportX, 346, kTransportWidth, 10, juce::Justification::centredLeft);
+    g.drawText("PLAYHEAD", transportX, 430, kTransportWidth, 10, juce::Justification::centredLeft);
 
-    // LEDs – midpoint between pitch row (328–368) and velocity row (432–462)
-    // pitch bottom = 368, velocity top = 432, midpoint = 400
-    for (int i = 0; i < 8; ++i)
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+        g.drawText(juce::String(i + 1), seqX + i * stepW, kSequencerStepNumberY, stepW, 10, juce::Justification::centred);
+
+    for (int row = 0; row < XTSequencer::numLaneRows; ++row)
+    {
+        const int rowY = getSequencerRowY(row);
+        g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
+        g.drawText(kSequencerLaneNames[(size_t) row], rowLabelX, rowY + 3, rowLabelW, 10, juce::Justification::centredRight);
+        g.setFont(juce::FontOptions(6.5f));
+        g.drawText(kSequencerLaneSubtitles[(size_t) row], rowLabelX, rowY + 15, rowLabelW, 9, juce::Justification::centredRight);
+
+        g.setColour(juce::Colour(0xffd0ccc6));
+        const float guideY = (float)(rowY + kSequencerKnobSize / 2);
+        g.drawLine((float)seqX, guideY, (float)(seqX + XTSequencer::numSteps * stepW), guideY, 0.8f);
+        g.setColour(labelBlack);
+    }
+
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        const float lx = (float)(seqX + i * stepW + stepW / 2);
+        const float ly = (float)kSequencerLedY;
+        const bool active = (i == currentLedStep);
+
+        if (active)
         {
-            float lx = (float)(seqX + i * stepW + stepW / 2);
-            float ly = 400.0f;
-            bool active = (i == currentLedStep);
-
-                    // Yttre glöd
-                    if (active)
-                    {
-                        g.setColour(juce::Colour(0x22ff2200));
-                        g.fillEllipse(lx - 10, ly - 10, 20, 20);
-                        g.setColour(juce::Colour(0x44ff2200));
-                        g.fillEllipse(lx - 8, ly - 8, 16, 16);
-                    }
-
-                    // LED-kropp
-                    juce::ColourGradient ledGrad(
-                        active ? juce::Colour(0xffff4422) : juce::Colour(0xff553322),
-                        lx - 3, ly - 3,
-                        active ? juce::Colour(0xffaa1100) : juce::Colour(0xff221111),
-                        lx + 3, ly + 3,
-                        true);
-                    g.setGradientFill(ledGrad);
-                    g.fillEllipse(lx - 5, ly - 5, 10, 10);
-
-                    // Spegelreflex
-                    if (active)
-                    {
-                        g.setColour(juce::Colour(0x88ffffff));
-                        g.fillEllipse(lx - 2.5f, ly - 3.5f, 3.0f, 2.0f);
-                    }
-
-                    // Kant
-                    g.setColour(active ? juce::Colour(0xff882200) : juce::Colour(0xff222222));
-                    g.drawEllipse(lx - 5, ly - 5, 10, 10, 1.0f);
+            g.setColour(juce::Colour(0x22ff2200));
+            g.fillEllipse(lx - 10, ly - 10, 20, 20);
+            g.setColour(juce::Colour(0x44ff2200));
+            g.fillEllipse(lx - 8, ly - 8, 16, 16);
         }
+
+        juce::ColourGradient ledGrad(
+            active ? juce::Colour(0xffff4422) : juce::Colour(0xff553322),
+            lx - 3, ly - 3,
+            active ? juce::Colour(0xffaa1100) : juce::Colour(0xff221111),
+            lx + 3, ly + 3,
+            true);
+        g.setGradientFill(ledGrad);
+        g.fillEllipse(lx - 5, ly - 5, 10, 10);
+
+        if (active)
+        {
+            g.setColour(juce::Colour(0x88ffffff));
+            g.fillEllipse(lx - 2.5f, ly - 3.5f, 3.0f, 2.0f);
+        }
+
+        g.setColour(active ? juce::Colour(0xff882200) : juce::Colour(0xff222222));
+        g.drawEllipse(lx - 5, ly - 5, 10, 10, 1.0f);
+    }
 
     // Branding
     g.setColour(labelBlack);
     g.setFont(juce::FontOptions(30.0f).withStyle("Bold"));
     g.drawText("DFAF XT", W-wood-jackW-20, H-56, 200, 32, juce::Justification::centredRight);
     g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
-    g.drawText("XT CORE PORT FROM DFAF", W-wood-jackW-20, H-24, 200, 11, juce::Justification::centredRight);
+    g.drawText("16 STEP PATCH SEQUENCER", W-wood-jackW-20, H-24, 200, 11, juce::Justification::centredRight);
     g.setFont(juce::FontOptions(7.5f));
-    g.drawText("SEMI-MODULAR PERCUSSION XT SYNTHESIZER", W-wood-jackW-20, H-13, 200, 11, juce::Justification::centredRight);
+    g.drawText("SEQUENCER-FIRST SEMI-MODULAR XT SYNTH", W-wood-jackW-20, H-13, 200, 11, juce::Justification::centredRight);
 }
 
 void XTEditor::resized()
 {
     const int W     = getWidth();
     const int wood  = 18;
-    const int jackW = 200;
+    const int jackW = kJackPanelWidth;
+    const int mainRight = W - wood - jackW;
     const int mainW = W - wood * 2 - jackW;
     const int kS    = (mainW - 60) / 11;
     const int offX  = wood + 30;
     const int kSz   = 54;
-    const int sSz   = 30;
+    const int sSz   = kSequencerKnobSize;
     const int footerY = kEditorBodyHeight + 7;
 
     presetBox.setBounds(wood + 76, footerY, 220, 22);
@@ -740,15 +822,19 @@ void XTEditor::resized()
         row2[i]->setBounds(offX + r2slots[i]*kS + (kS-r2sizes[i])/2, 182, r2sizes[i], r2sizes[i]);
 
     // Sequencer
-    clockMultBox.setBounds(wood+18, 326, 90, 22);
-    resetButton.setBounds(wood+18, 408, 90, 24);
+    clockMultBox.setBounds(wood + kTransportOffsetX, 360, kTransportWidth, 22);
+    resetButton.setBounds(wood + kTransportOffsetX, 444, kTransportWidth, 24);
 
-    const int seqX  = wood + 140;
-    const int stepW = (W - wood - jackW - seqX) / 8;
-    for (int i = 0; i < 8; ++i)
+    const int seqX = wood + kSequencerGridOffsetX;
+    const int seqW = mainRight - 14 - seqX;
+    const int stepW = seqW / XTSequencer::numSteps;
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
-        int x = seqX + i*stepW + (stepW-sSz)/2;
-        stepPitch[i].setBounds(x, 326, sSz, sSz);
-        stepVelocity[i].setBounds(x, 432, sSz, sSz);
+        const int x = seqX + i * stepW + (stepW - sSz) / 2;
+        stepPitch[i].setBounds(x, getSequencerRowY(0), sSz, sSz);
+        stepVelocity[i].setBounds(x, getSequencerRowY(1), sSz, sSz);
+        stepModA[i].setBounds(x, getSequencerRowY(2), sSz, sSz);
+        stepModB[i].setBounds(x, getSequencerRowY(3), sSz, sSz);
+        stepModC[i].setBounds(x, getSequencerRowY(4), sSz, sSz);
     }
 }

@@ -108,8 +108,11 @@ private:
 
     // Sequencer
         juce::ComboBox clockMultBox;
-        juce::Slider stepPitch[8];
-        juce::Slider stepVelocity[8];
+        juce::Slider stepPitch[XTSequencer::numSteps];
+        juce::Slider stepVelocity[XTSequencer::numSteps];
+        juce::Slider stepModA[XTSequencer::numSteps];
+        juce::Slider stepModB[XTSequencer::numSteps];
+        juce::Slider stepModC[XTSequencer::numSteps];
 
     int currentLedStep = -1;
         bool resetLedActive = false;
@@ -146,7 +149,8 @@ private:
     std::unique_ptr<SliderAttachment> noiseLevelAtt, cutoffAtt, resonanceAtt;
     std::unique_ptr<SliderAttachment> vcfDecayAtt, vcfEgAmtAtt, noiseVcfModAtt;
     std::unique_ptr<SliderAttachment> vcaDecayAtt, vcaEgAtt, volumeAtt;        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> clockMultBoxAtt;
-        std::unique_ptr<SliderAttachment> stepPitchAtt[8], stepVelAtt[8];
+        std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps], stepVelAtt[XTSequencer::numSteps];
+        std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps], stepModBAtt[XTSequencer::numSteps], stepModCAtt[XTSequencer::numSteps];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(XTEditor)
 };

@@ -26,9 +26,11 @@ Current XT artifacts:
 
 - `DFAF_XT_REFACTOR_PLAN.md`
 - initial JUCE/CMake port of the DFAF core into the XT repo
+- 16-step sequencer with `Pitch`, `Velocity`, `Mod A`, `Mod B`, `Mod C`
+- `Mod A/B/C` exposed as held sequencer modulation sources in the XT patch system
 
 Next implementation step:
 
-- expand the sequencer from `8x2` to `16x5`
-- introduce `Mod A`, `Mod B`, `Mod C` as real XT lanes
-- reshape the editor toward the XT sketch and panel sections
+- add dedicated XT modulation destinations and amounts for `Mod A/B/C`
+- reshape the top panel toward the XT sketch sections
+- decide whether XT should expose the patchbay directly or move toward a hybrid modulation UI

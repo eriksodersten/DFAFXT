@@ -27,6 +27,9 @@ enum PatchPoint
     PP_FM_AMT    = 11,  // IN  – additive FM amount CV (bipolar, 0..1 domain)
     PP_NOISE_LVL = 12,  // IN  – additive noise level CV (bipolar, 0..1 domain)
     PP_PITCH     = 13,  // OUT – step pitch, normalised bipolar (note-60)/60
+    PP_MOD_A     = 14,  // OUT – sequencer Mod A, bipolar -1..1
+    PP_MOD_B     = 15,  // OUT – sequencer Mod B, bipolar -1..1
+    PP_MOD_C     = 16,  // OUT – sequencer Mod C, bipolar -1..1
     PP_NUM_POINTS
 };
 
@@ -57,6 +60,9 @@ inline const PatchPointMeta kPatchMeta[PP_NUM_POINTS] =
     { "FM AMT",  PD_In,  true  },   // PP_FM_AMT    – additive FM amount CV
     { "NOISE LV",PD_In,  true  },   // PP_NOISE_LVL – additive noise level CV
     { "PITCH",   PD_Out, true  },   // PP_PITCH     – step pitch bipolar (note-60)/60
+    { "MOD A",   PD_Out, true  },   // PP_MOD_A     – sequencer lane A bipolar
+    { "MOD B",   PD_Out, true  },   // PP_MOD_B     – sequencer lane B bipolar
+    { "MOD C",   PD_Out, true  },   // PP_MOD_C     – sequencer lane C bipolar
 };
 
 /** One active cable between a source and a destination. */
@@ -122,6 +128,9 @@ public:
         MoogLadderFilter filter;
         float currentVelocity    = 0.0f;   // held from last trigger, used as patch source
         float currentPitch       = 0.0f;   // held from last trigger, normalised bipolar
+        float currentModA        = 0.0f;   // held from last trigger, bipolar -1..1
+        float currentModB        = 0.0f;   // held from last trigger, bipolar -1..1
+        float currentModC        = 0.0f;   // held from last trigger, bipolar -1..1
         juce::RangedAudioParameter* vcfDecayParam = nullptr;  // cached for normalised-domain mod
     juce::RangedAudioParameter* vcaDecayParam = nullptr;  // cached for normalised-domain mod
     juce::RangedAudioParameter* vcoDecayParam = nullptr;  // cached for normalised-domain mod
@@ -153,7 +162,7 @@ private:
     std::unique_ptr<juce::XmlElement> createStateXml();
     void restoreStateFromXml(const juce::XmlElement& xml, const juce::String& presetNameOverride);
 
-    static constexpr size_t kNumMidiCcBindings = 39;
+    static constexpr size_t kNumMidiCcBindings = 103;
     void initialiseMidiCcBindings();
     void applyMidiCc(int ccNumber, int ccValue);
 
