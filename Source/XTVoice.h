@@ -102,22 +102,32 @@ public:
             for (int os = 0; os < oversampleFactor; ++os)
             {
                 const float modFreq1 = currentFreq1 * std::pow(2.0f, vco1EgAmt * vcoEnv * vel / 12.0f);
-                const float inst1    = modFreq1 / oscSampleRate * phaseDir1;
-                const float phase1Start = phase1;
-
-                phase1 += inst1;
-                bool sync1 = false;
+                bool  sync1    = false;
                 float syncFrac = 1.0f;
-                if (phase1 >= 1.0f)
-                {
-                    sync1 = true;
-                    syncFrac = juce::jlimit(0.0f, 1.0f, (1.0f - phase1Start) / juce::jmax(inst1, 1.0e-12f));
-                    phase1 = 2.0f - phase1;
-                    phaseDir1 = -phaseDir1;
-                }
-                if (phase1 <  0.0f) { phase1 = -phase1;        phaseDir1 = -phaseDir1; }
+                float vco1out;
 
-                float vco1out = renderOscillatorSample(vco1Wave, phase1, inst1) * phaseDir1;
+                if (vco1Wave == 2)  // Metal: 6 TR-606 detuned square waves
+                {
+                    vco1out = renderMetalSample(metalPhases, modFreq1 / oscSampleRate);
+                    // Metal mode does not drive hard sync on VCO2
+                }
+                else
+                {
+                    const float inst1       = modFreq1 / oscSampleRate * phaseDir1;
+                    const float phase1Start = phase1;
+
+                    phase1 += inst1;
+                    if (phase1 >= 1.0f)
+                    {
+                        sync1     = true;
+                        syncFrac  = juce::jlimit(0.0f, 1.0f, (1.0f - phase1Start) / juce::jmax(inst1, 1.0e-12f));
+                        phase1    = 2.0f - phase1;
+                        phaseDir1 = -phaseDir1;
+                    }
+                    if (phase1 < 0.0f) { phase1 = -phase1; phaseDir1 = -phaseDir1; }
+
+                    vco1out = renderOscillatorSample(vco1Wave, phase1, inst1) * phaseDir1;
+                }
 
                 const float carrierFreq2   = currentFreq2 * std::pow(2.0f, vco2EgAmt * vcoEnv * vel / 12.0f);
                 const float linearFmHz     = currentFreq2 * currentFm * vco1out * 2.0f;
@@ -218,6 +228,7 @@ public:
             vcaAttack.setCurrentAndTargetValue(0.0f);
             vcaAttack.setTargetValue(1.0f);
             vcaEnvelope.trigger(vel);
+            metalPhases.fill(0.0f);
         }
     }
 
@@ -278,6 +289,26 @@ private:
         float p   = phase * 4.0f;
         float tri = (p < 1.0f) ? p : (p < 3.0f) ? 2.0f - p : p - 4.0f;
         return std::tanh(2.2f * tri) / std::tanh(2.2f);
+    }
+
+    // TR-606 open hi-hat: 6 detuned square waves at non-harmonic ratios.
+    // Frequencies measured from original Roland TR-606 circuit.
+    static constexpr std::array<float, 6> kMetalRatios {
+        1.0f, 1.3024f, 1.4015f, 1.5381f, 1.6704f, 1.9218f
+    };
+
+    static float renderMetalSample(std::array<float, 6>& phases, float baseStep) noexcept
+    {
+        float out = 0.0f;
+        for (int i = 0; i < 6; ++i)
+        {
+            const float pStep = baseStep * kMetalRatios[(size_t) i];
+            phases[(size_t) i] += pStep;
+            if (phases[(size_t) i] >= 1.0f) phases[(size_t) i] -= 1.0f;
+            const float pDt = juce::jlimit(0.0f, 0.5f, pStep);
+            out += squarePolyBlep(phases[(size_t) i], pDt);
+        }
+        return out * (1.0f / 3.0f);  // normalise: /6 then ×2 for perceived level
     }
 
     void clearOscillatorDecimator()
@@ -348,6 +379,7 @@ private:
     int   vco1Wave         = 0;
     int   vco2Wave         = 0;
     bool  hardSync         = false;
+    std::array<float, 6> metalPhases {};
     float smoothedAmp      = 0.0f;
     float ampDezipperCoeff = 1.0f;
     float vcfAttackCoeff   = 1.0f;

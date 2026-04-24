@@ -115,7 +115,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
         juce::StringArray({ "VCO 1&2", "OFF", "VCO 2" }), 0));
     params.push_back(std::make_unique<juce::AudioParameterBool>("hardSync", "Hard Sync", false));
     params.push_back(std::make_unique<juce::AudioParameterChoice>("vco1Wave", "VCO 1 Wave",
-            juce::StringArray({ "Square", "Triangle" }), 0));
+            juce::StringArray({ "Square", "Triangle", "Metal" }), 0));
     params.push_back(std::make_unique<juce::AudioParameterChoice>("vco2Wave", "VCO 2 Wave",
                 juce::StringArray({ "Square", "Triangle" }), 0));
         params.push_back(std::make_unique<juce::AudioParameterChoice>("vcfMode", "VCF Mode",

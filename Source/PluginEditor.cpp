@@ -576,6 +576,7 @@ XTEditor::XTEditor(XTProcessor& p)
 
     vco1WaveBox.addItem("SQUARE", 1);
     vco1WaveBox.addItem("TRIANGLE", 2);
+    vco1WaveBox.addItem("METAL", 3);
     addChoice(vco1WaveBox);
 
     vco2WaveBox.addItem("SQUARE", 1);
@@ -970,13 +971,14 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("WAVE", 208, 374, 58);
     drawLabel("LEVEL", 278, 388, 52);
     drawLabel("LVL", 351, 388, 46);
-    drawPlaceholderKnob(278, 332, 46);     // VCO2 LEVEL — no param yet
+    // VCO2 LEVEL at (278,325) is now a live widget — no placeholder needed
     drawPlaceholderKnob(351, 332, 46);     // VCO2 LVL — no param yet
 
-    // MIX section — top row knobs are LIVE (vco1Level, vco2Level, noiseLevel)
+    // MIX section — vco1Level and noiseLevel are LIVE; vco2Level moved to osc section
     drawLabel("VCO 1", 507, 218, 50);
-    drawLabel("VCO 2", 580, 218, 50);
+    drawLabel("VCO 2", 580, 218, 50);     // placeholder slot (no param)
     drawLabel("NOISE", 652, 218, 58);
+    drawPlaceholderKnob(580, 166, 46);    // MIX VCO 2 slot — no param
     // Bottom row: fmAmount is LIVE; CLK controls have no param
     drawLabel("FM AMT", 507, 326, 68);
     drawLabel("CLK TUNE", 580, 326, 72);
@@ -1184,15 +1186,15 @@ void XTEditor::resized()
     // HARD SYNC toggle
     hardSyncBox.setBounds(ref(419.0f, 178.0f, 62.0f, 56.0f));
 
-    // VCO 2 (LEVEL + LVL slots have no param → placeholder in paint)
+    // VCO 2 — LEVEL slot now live (vco2Level), LVL slot still placeholder
     vco2Frequency.setBounds(ref(62.0f, 325.0f, 50.0f, 50.0f));
     vco2EgAmount.setBounds(ref(135.0f, 325.0f, 50.0f, 50.0f));
     vco2WaveBox.setBounds(ref(205.0f, 339.0f, 58.0f, 24.0f));
+    vco2Level.setBounds(ref(278.0f, 325.0f, 50.0f, 50.0f));
 
     // --- MIX / TRANSIENT ---
-    // Top row: mixer levels (VCO1, VCO2, NOISE)
+    // Top row: vco1Level and noiseLevel; vco2Level moved to osc section
     vco1Level.setBounds(ref(507.0f, 166.0f, 50.0f, 50.0f));
-    vco2Level.setBounds(ref(580.0f, 166.0f, 50.0f, 50.0f));
     noiseLevel.setBounds(ref(653.0f, 166.0f, 50.0f, 50.0f));
     // Bottom row: FM AMT live; CLK controls placeholder only
     fmAmount.setBounds(ref(507.0f, 272.0f, 50.0f, 50.0f));
