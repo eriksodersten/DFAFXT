@@ -957,13 +957,12 @@ void XTEditor::paint(juce::Graphics& g)
     line(119, 297, 347, 297, 0.8f);
 
     drawLabel("HARD SYNC", 431, 160, 70);
-    // VCO 1 labels — FREQ/EG AMT/VCO DECAY are live; WAVE is live combo; LEVEL has no param
+    // VCO 1 labels — all live
     drawLabel("FREQ", 62, 248, 52);
     drawLabel("EG AMT", 135, 248, 62);
     drawLabel("WAVE", 208, 234, 58);
     drawLabel("LEVEL", 278, 248, 52);
     drawLabel("VCO DECAY", 351, 248, 52);
-    drawPlaceholderKnob(278, 192, 46);     // VCO1 LEVEL — no param yet
 
     // VCO 2 labels — FREQ/EG AMT are live; WAVE is live combo; LEVEL+LVL have no param
     drawLabel("FREQ", 62, 388, 52);
@@ -974,10 +973,11 @@ void XTEditor::paint(juce::Graphics& g)
     // VCO2 LEVEL at (278,325) is now a live widget — no placeholder needed
     drawPlaceholderKnob(351, 332, 46);     // VCO2 LVL — no param yet
 
-    // MIX section — vco1Level and noiseLevel are LIVE; vco2Level moved to osc section
+    // MIX section — noiseLevel is LIVE; VCO 1 + VCO 2 moved to osc section
     drawLabel("VCO 1", 507, 218, 50);
-    drawLabel("VCO 2", 580, 218, 50);     // placeholder slot (no param)
+    drawLabel("VCO 2", 580, 218, 50);
     drawLabel("NOISE", 652, 218, 58);
+    drawPlaceholderKnob(507, 166, 46);    // MIX VCO 1 slot — no param
     drawPlaceholderKnob(580, 166, 46);    // MIX VCO 2 slot — no param
     // Bottom row: fmAmount is LIVE; CLK controls have no param
     drawLabel("FM AMT", 507, 326, 68);
@@ -992,12 +992,16 @@ void XTEditor::paint(juce::Graphics& g)
     g.drawRoundedRectangle(ref(526, 388, 249, 32).toFloat(), 3.0f, 0.8f);
     drawMuted("VCO1 + VCO2 + NOISE + CLICK → FILTER → DRIVE → VCA → OUT", 531, 399, 238);
 
-    // FILTER — knobs and vcfModeBox are LIVE; labels centred under each knob centre
+    // FILTER — all knobs live; row 1 = VCF/volume, row 2 = decay/amp envelope
     drawLabel("MODE",         816, 134, 68);
     drawLabel("CUTOFF",       806, 250, 90);
     drawLabel("RESONANCE",    876, 250, 92);
     drawLabel("VCF EG AMT",   946, 250, 96);
     drawLabel("VOLUME",      1020, 250, 84);
+    drawLabel("VCF DEC",      820, 344, 76);
+    drawLabel("VCA DEC",      892, 344, 76);
+    drawLabel("VCA EG",       964, 344, 76);
+    drawLabel("NOISE MOD",   1020, 344, 84);
     drawPlaceholderBox(819, 372, 24, 24);
     drawPlaceholderBox(849, 372, 24, 24);
     drawPlaceholderBox(879, 372, 24, 24);
@@ -1052,7 +1056,8 @@ void XTEditor::paint(juce::Graphics& g)
     drawMuted("30", 71, 581, 24);
     drawMuted("300", 154, 581, 32);
     drawMuted("BPM", 101, 596, 32);
-    drawPlaceholderBox(49, 618, 34, 24, "1X");
+    drawLabel("CLK MULT", 43, 604, 68);
+    drawLabel("SEQ PITCH", 124, 604, 70);
     drawPlaceholderBox(40, 679, 34, 24);
     drawPlaceholderBox(90, 679, 34, 24);
     drawPlaceholderBox(140, 679, 34, 24);
@@ -1168,19 +1173,12 @@ void XTEditor::resized()
     presetArea.removeFromLeft(6);
     presetInitButton.setBounds(presetArea.removeFromLeft(juce::roundToInt(38.0f * uiScale)).withHeight(juce::roundToInt(22.0f * uiScale)));
 
-    // Controls with no clear sketch position — keep hidden
-    seqPitchModBox.setVisible(false);
-    noiseVcfMod.setVisible(false);
-    vcfDecay.setVisible(false);
-    vcaDecay.setVisible(false);
-    vcaEg.setVisible(false);
-    clockMultBox.setVisible(false);
-
     // --- OSCILLATORS ---
-    // VCO 1 (LEVEL slot has no param → placeholder in paint)
+    // VCO 1 — all slots live
     vco1Frequency.setBounds(ref(62.0f, 185.0f, 50.0f, 50.0f));
     vco1EgAmount.setBounds(ref(135.0f, 185.0f, 50.0f, 50.0f));
     vco1WaveBox.setBounds(ref(205.0f, 199.0f, 58.0f, 24.0f));
+    vco1Level.setBounds(ref(278.0f, 192.0f, 50.0f, 50.0f));
     vcoDecay.setBounds(ref(351.0f, 185.0f, 50.0f, 50.0f));
 
     // HARD SYNC toggle
@@ -1193,8 +1191,7 @@ void XTEditor::resized()
     vco2Level.setBounds(ref(278.0f, 325.0f, 50.0f, 50.0f));
 
     // --- MIX / TRANSIENT ---
-    // Top row: vco1Level and noiseLevel; vco2Level moved to osc section
-    vco1Level.setBounds(ref(507.0f, 166.0f, 50.0f, 50.0f));
+    // Top row: noiseLevel; vco1Level and vco2Level moved to osc section
     noiseLevel.setBounds(ref(653.0f, 166.0f, 50.0f, 50.0f));
     // Bottom row: FM AMT live; CLK controls placeholder only
     fmAmount.setBounds(ref(507.0f, 272.0f, 50.0f, 50.0f));
@@ -1207,6 +1204,11 @@ void XTEditor::resized()
     resonance.setBounds(ref(892.0f, 178.0f, 62.0f, 62.0f));
     vcfEgAmount.setBounds(ref(964.0f, 178.0f, 62.0f, 62.0f));
     volume.setBounds(ref(1036.0f, 178.0f, 62.0f, 62.0f));
+    // Row 2: decay + amp envelope
+    vcfDecay.setBounds(ref(820.0f, 272.0f, 62.0f, 62.0f));
+    vcaDecay.setBounds(ref(892.0f, 272.0f, 62.0f, 62.0f));
+    vcaEg.setBounds(ref(964.0f, 272.0f, 62.0f, 62.0f));
+    noiseVcfMod.setBounds(ref(1036.0f, 272.0f, 62.0f, 62.0f));
 
     // --- MODULATION ---
     modDestBox[0].setBounds(ref(1160.0f, 245.0f, 70.0f, 26.0f));
@@ -1217,6 +1219,8 @@ void XTEditor::resized()
     modAmount[2].setBounds(ref(1341.0f, 328.0f, 54.0f, 54.0f));
 
     // --- TRANSPORT ---
+    clockMultBox.setBounds(ref(43.0f, 618.0f, 68.0f, 24.0f));
+    seqPitchModBox.setBounds(ref(124.0f, 618.0f, 70.0f, 24.0f));
     resetButton.setBounds(ref(191.0f, 679.0f, 34.0f, 24.0f));
 
     const float stepLeft = 525.0f;
