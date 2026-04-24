@@ -1,160 +1,160 @@
 #pragma once
+
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 
-//==============================================================================
+enum class XTKnobStyle
+{
+    small,      // upper oscillator / mix / mod knobs
+    main,       // big center row (CUTOFF, RESONANCE, VCF EG AMT, VOLUME)
+    sequencer,  // 16x5 sequencer grid
+    transport   // TEMPO, SWING, STEP COUNT
+};
+
+enum class XTComboStyle
+{
+    led,        // DEST / WAVE / VCF MODE readouts: amber on black, LED-display style
+    toggle,     // HARD SYNC: 2-position physical toggle
+    preset      // preset combo in header
+};
+
+enum class XTButtonStyle
+{
+    led,        // square LED buttons (DRIVE, MODE, transport, LFO)
+    utility,    // soft rounded utility buttons (SAVE, DELETE, INIT)
+    square      // small square transport reset
+};
+
+class XTSlider : public juce::Slider
+{
+public:
+    explicit XTSlider(XTKnobStyle knobStyle = XTKnobStyle::main) : style(knobStyle) {}
+    XTKnobStyle style;
+};
+
+class XTComboBox : public juce::ComboBox
+{
+public:
+    explicit XTComboBox(XTComboStyle comboStyle = XTComboStyle::led) : style(comboStyle) {}
+    XTComboStyle style;
+};
+
+class XTTextButton : public juce::TextButton
+{
+public:
+    XTTextButton(const juce::String& text, XTButtonStyle buttonStyle)
+        : juce::TextButton(text), style(buttonStyle) {}
+
+    XTButtonStyle style;
+};
+
 class XTLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    XTLookAndFeel()
-    {
-        setColour(juce::Slider::rotarySliderFillColourId,    juce::Colour(0xffcccccc));
-        setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xff222222));
-        setColour(juce::Slider::thumbColourId,               juce::Colour(0xffffffff));
-    }
+    XTLookAndFeel();
 
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
                           float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
-                          juce::Slider&) override
-    {
-        const float radius = juce::jmin((float)width / 2.0f, (float)height / 2.0f) - 4.0f;
-        const float cx = (float)x + (float)width  * 0.5f;
-        const float cy = (float)y + (float)height * 0.5f;
-
-        g.setColour(juce::Colour(0xff111111));
-        g.fillEllipse(cx - radius - 2, cy - radius - 2, (radius + 2) * 2, (radius + 2) * 2);
-
-        juce::ColourGradient grad(
-            juce::Colour(0xff383838), cx - radius * 0.3f, cy - radius * 0.3f,
-            juce::Colour(0xff111111), cx + radius * 0.5f, cy + radius * 0.5f,
-            true);
-        g.setGradientFill(grad);
-        g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
-
-        const int numTags = 20;
-        for (int i = 0; i < numTags; ++i)
-        {
-            float angle = (float)i / numTags * juce::MathConstants<float>::twoPi;
-            float x0 = cx + (radius - 0.5f) * std::cos(angle);
-            float y0 = cy + (radius - 0.5f) * std::sin(angle);
-            float x1 = cx + (radius - 4.5f) * std::cos(angle);
-            float y1 = cy + (radius - 4.5f) * std::sin(angle);
-            g.setColour(juce::Colour(0xff555555));
-            g.drawLine(x0, y0, x1, y1, 1.2f);
-        }
-
-        juce::ColourGradient innerGrad(
-            juce::Colour(0xff484848), cx - radius * 0.2f, cy - radius * 0.2f,
-            juce::Colour(0xff1a1a1a), cx + radius * 0.3f, cy + radius * 0.3f,
-            true);
-        g.setGradientFill(innerGrad);
-        g.fillEllipse(cx - radius * 0.68f, cy - radius * 0.68f,
-                      radius * 1.36f, radius * 1.36f);
-
-        const float angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
-        const float lineR = radius * 0.52f;
-        const float lx1   = cx + lineR * std::cos(angle - juce::MathConstants<float>::halfPi);
-        const float ly1   = cy + lineR * std::sin(angle - juce::MathConstants<float>::halfPi);
-        const float lx0   = cx + radius * 0.18f * std::cos(angle - juce::MathConstants<float>::halfPi);
-        const float ly0   = cy + radius * 0.18f * std::sin(angle - juce::MathConstants<float>::halfPi);
-        g.setColour(juce::Colour(0xffffffff));
-        g.drawLine(lx0, ly0, lx1, ly1, 2.0f);
-
-        juce::Path arcTrack;
-        arcTrack.addCentredArc(cx, cy, radius + 3.5f, radius + 3.5f,
-                               0.0f, rotaryStartAngle, rotaryEndAngle, true);
-        g.setColour(juce::Colour(0xff444444));
-        g.strokePath(arcTrack, juce::PathStrokeType(1.5f));
-
-        juce::Path arcFill;
-        arcFill.addCentredArc(cx, cy, radius + 3.5f, radius + 3.5f,
-                              0.0f, rotaryStartAngle, angle, true);
-        g.setColour(juce::Colour(0xff888888));
-        g.strokePath(arcFill, juce::PathStrokeType(1.5f));
-    }
+                          juce::Slider&) override;
+    void drawComboBox(juce::Graphics& g, int width, int height, bool isButtonDown,
+                      int buttonX, int buttonY, int buttonW, int buttonH,
+                      juce::ComboBox&) override;
+    void positionComboBoxText(juce::ComboBox&, juce::Label&) override;
+    juce::Font getComboBoxFont(juce::ComboBox&) override;
+    void drawButtonBackground(juce::Graphics&, juce::Button&, const juce::Colour&,
+                              bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
+    void drawButtonText(juce::Graphics&, juce::TextButton&, bool shouldDrawButtonAsHighlighted,
+                        bool shouldDrawButtonAsDown) override;
 };
 
-//==============================================================================
 class XTEditor : public juce::AudioProcessorEditor,
-                   private juce::Timer
+                 private juce::Timer
 {
 public:
-    XTEditor(XTProcessor&);
+    explicit XTEditor(XTProcessor&);
     ~XTEditor() override;
+
     void paint(juce::Graphics&) override;
     void resized() override;
 
 private:
+    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    using ComboAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
+
+    void timerCallback() override;
+    void setupKnob(XTSlider& slider);
+    void setupChoice(XTComboBox& box);
+    void refreshPresetControls();
+    void promptSavePreset();
+    void updatePresetButtonState();
+    juce::String getModLaneSubtitle(int modLaneIndex) const;
+
     XTProcessor& xtProcessor;
     XTLookAndFeel laf;
 
-    juce::ComboBox presetBox;
-    juce::TextButton presetSaveButton { "SAVE" };
-    juce::TextButton presetDeleteButton { "DELETE" };
-    juce::TextButton presetInitButton { "INIT" };
+    XTComboBox presetBox { XTComboStyle::preset };
+    XTTextButton presetSaveButton { "SAVE", XTButtonStyle::utility };
+    XTTextButton presetDeleteButton { "DELETE", XTButtonStyle::utility };
+    XTTextButton presetInitButton { "INIT", XTButtonStyle::utility };
     std::unique_ptr<juce::FileChooser> presetSaveChooser;
     juce::String lastPresetName;
     bool isUpdatingPresetBox = false;
 
-    // Row 1
-        juce::Slider vcoDecay, vco1EgAmount, vco1Frequency;
-    juce::ComboBox seqPitchModBox;
-        juce::ComboBox hardSyncBox;
-    juce::Slider vco1Level, noiseLevel, cutoff, resonance, vcaEg, volume;
+    XTSlider vcoDecay { XTKnobStyle::small }, vco1EgAmount { XTKnobStyle::small }, vco1Frequency { XTKnobStyle::small };
+    XTSlider fmAmount { XTKnobStyle::small }, vco2EgAmount { XTKnobStyle::small }, vco2Frequency { XTKnobStyle::small };
+    XTSlider vco1Level { XTKnobStyle::small }, vco2Level { XTKnobStyle::small }, noiseLevel { XTKnobStyle::small };
+    XTSlider cutoff { XTKnobStyle::main }, resonance { XTKnobStyle::main }, vcfDecay { XTKnobStyle::main }, vcfEgAmount { XTKnobStyle::main }, noiseVcfMod { XTKnobStyle::main }, vcaDecay { XTKnobStyle::main }, vcaEg { XTKnobStyle::main }, volume { XTKnobStyle::main };
+    XTSlider modAmount[3] { XTSlider { XTKnobStyle::main }, XTSlider { XTKnobStyle::main }, XTSlider { XTKnobStyle::main } };
 
-    // Row 2
-    juce::Slider fmAmount, vco2EgAmount, vco2Frequency;
-    juce::Slider vco2Level, vcfDecay, vcfEgAmount, noiseVcfMod, vcaDecay;
-    juce::ComboBox modDestBox[3];
-    juce::Slider modAmount[3];
+    XTComboBox seqPitchModBox { XTComboStyle::led };
+    XTComboBox hardSyncBox { XTComboStyle::toggle };
+    XTComboBox vco1WaveBox { XTComboStyle::led }, vco2WaveBox { XTComboStyle::led }, vcfModeBox { XTComboStyle::led };
+    XTComboBox modDestBox[3] { XTComboBox { XTComboStyle::led }, XTComboBox { XTComboStyle::led }, XTComboBox { XTComboStyle::led } };
+    XTComboBox clockMultBox { XTComboStyle::led };
 
-    // Sequencer
-        juce::ComboBox clockMultBox;
-        juce::Slider stepPitch[XTSequencer::numSteps];
-        juce::Slider stepVelocity[XTSequencer::numSteps];
-        juce::Slider stepModA[XTSequencer::numSteps];
-        juce::Slider stepModB[XTSequencer::numSteps];
-        juce::Slider stepModC[XTSequencer::numSteps];
+    XTTextButton resetButton { "RST", XTButtonStyle::square };
+
+    XTSlider stepPitch[XTSequencer::numSteps];
+    XTSlider stepVelocity[XTSequencer::numSteps];
+    XTSlider stepModA[XTSequencer::numSteps];
+    XTSlider stepModB[XTSequencer::numSteps];
+    XTSlider stepModC[XTSequencer::numSteps];
 
     int currentLedStep = -1;
-        bool resetLedActive = false;
-        juce::TextButton resetButton;
+    bool resetLedActive = false;
 
-        void timerCallback() override;
-    void setupKnob(juce::Slider& slider, bool small = false);
-    void refreshPresetControls();
-    void promptSavePreset();
-    void updatePresetButtonState();
-    void drawSwitch(juce::Graphics& g, float x, float y, float w, float h,
-                    const juce::String& label, const juce::StringArray& options) const;
-    void drawButton(juce::Graphics& g, float x, float y, float r,
-                    const juce::String& label, bool red = false) const;
-    // Patch GUI helpers
-    juce::Point<int>  getJackCentre (PatchPoint pp) const;
-    PatchPoint        jackHitTest   (juce::Point<int> pos) const;
-    void              mouseDown     (const juce::MouseEvent&) override;
-    void drawJackPanel(juce::Graphics& g, int x, int y, int w, int h,
-                       const std::vector<PatchCable>& cables,
-                       PatchPoint selectedOut) const;
+    std::unique_ptr<SliderAttachment> vcoDecayAtt;
+    std::unique_ptr<SliderAttachment> vco1FreqAtt;
+    std::unique_ptr<SliderAttachment> vco1EgAmtAtt;
+    std::unique_ptr<SliderAttachment> fmAmountAtt;
+    std::unique_ptr<SliderAttachment> vco2FreqAtt;
+    std::unique_ptr<SliderAttachment> vco2EgAmtAtt;
+    std::unique_ptr<SliderAttachment> vco1LevelAtt;
+    std::unique_ptr<SliderAttachment> vco2LevelAtt;
+    std::unique_ptr<SliderAttachment> noiseLevelAtt;
+    std::unique_ptr<SliderAttachment> cutoffAtt;
+    std::unique_ptr<SliderAttachment> resonanceAtt;
+    std::unique_ptr<SliderAttachment> vcfDecayAtt;
+    std::unique_ptr<SliderAttachment> vcfEgAmtAtt;
+    std::unique_ptr<SliderAttachment> noiseVcfModAtt;
+    std::unique_ptr<SliderAttachment> vcaDecayAtt;
+    std::unique_ptr<SliderAttachment> vcaEgAtt;
+    std::unique_ptr<SliderAttachment> volumeAtt;
 
-    PatchPoint pendingOut = PP_NUM_POINTS;   // OUT jack waiting for a destination
-    std::vector<PatchCable> lastCableSnapshot;
+    std::unique_ptr<ComboAttachment> seqPitchModBoxAtt;
+    std::unique_ptr<ComboAttachment> hardSyncBoxAtt;
+    std::unique_ptr<ComboAttachment> vco1WaveBoxAtt;
+    std::unique_ptr<ComboAttachment> vco2WaveBoxAtt;
+    std::unique_ptr<ComboAttachment> vcfModeBoxAtt;
+    std::unique_ptr<ComboAttachment> clockMultBoxAtt;
+    std::unique_ptr<ComboAttachment> modDestBoxAtt[3];
 
-    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
-    std::unique_ptr<SliderAttachment> vcoDecayAtt, vco1FreqAtt, vco1EgAmtAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> seqPitchModBoxAtt;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> hardSyncBoxAtt;
-    juce::ComboBox vco1WaveBox, vco2WaveBox, vcfModeBox;
-            std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> vco1WaveBoxAtt, vco2WaveBoxAtt, vcfModeBoxAtt;
-        std::unique_ptr<SliderAttachment> vco1LevelAtt, vco2LevelAtt;
-    std::unique_ptr<SliderAttachment> fmAmountAtt, vco2FreqAtt, vco2EgAmtAtt;
-    std::unique_ptr<SliderAttachment> noiseLevelAtt, cutoffAtt, resonanceAtt;
-    std::unique_ptr<SliderAttachment> vcfDecayAtt, vcfEgAmtAtt, noiseVcfModAtt;
-    std::unique_ptr<SliderAttachment> vcaDecayAtt, vcaEgAtt, volumeAtt;        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> clockMultBoxAtt;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modDestBoxAtt[3];
-        std::unique_ptr<SliderAttachment> modAmountAtt[3];
-        std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps], stepVelAtt[XTSequencer::numSteps];
-        std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps], stepModBAtt[XTSequencer::numSteps], stepModCAtt[XTSequencer::numSteps];
+    std::unique_ptr<SliderAttachment> modAmountAtt[3];
+    std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps];
+    std::unique_ptr<SliderAttachment> stepVelAtt[XTSequencer::numSteps];
+    std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps];
+    std::unique_ptr<SliderAttachment> stepModBAtt[XTSequencer::numSteps];
+    std::unique_ptr<SliderAttachment> stepModCAtt[XTSequencer::numSteps];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(XTEditor)
 };
