@@ -58,6 +58,9 @@ public:
     void setHardSync(bool enabled)        { hardSync = enabled; }
     void setVco1Wave(int wave)            { vco1Wave = wave; }
     void setVco2Wave(int wave)            { vco2Wave = wave; }
+    void setClickTune(float hz)           { clickFreqHz = hz; }
+    void setClickDecay(float s)           { clickDecaySeconds = s; }
+    void setClickLevel(float lev)         { clickLevelVal = lev; }
 
     float getVcfEnvValue() const { return lastVcfEnv; }
 
@@ -166,6 +169,16 @@ public:
             float toneAmp = vcoEnv;
             float tone    = readOscillatorDecimatorOutput();
             f.raw      = tone * toneAmp + noise * noiseLevel;
+            if (clickActive && clickLevelVal > 0.0f)
+            {
+                clickEnvPhase += 1.0f / ((float)sr * juce::jmax(0.001f, clickDecaySeconds));
+                if (clickEnvPhase >= 1.0f) { clickEnvPhase = 1.0f; clickActive = false; }
+                float env = std::exp(-clickEnvPhase * 10.0f);
+                float cn = random.nextFloat() * 2.0f - 1.0f;
+                const float alpha = juce::jlimit(0.0f, 0.99f, clickFreqHz / (float)sr * juce::MathConstants<float>::twoPi);
+                clickFilt += (cn - clickFilt) * alpha;
+                f.raw += clickFilt * clickLevelVal * env * 2.0f;
+            }
             f.vcfEnv   = lastVcfEnv * vel;
             f.noiseRaw = noise;
             targetAmp = vcaEnv * attackGain;
@@ -229,6 +242,9 @@ public:
             vcaAttack.setTargetValue(1.0f);
             vcaEnvelope.trigger(vel);
             metalPhases.fill(0.0f);
+            clickActive = true;
+            clickEnvPhase = 0.0f;
+            clickFilt = 0.0f;
         }
     }
 
@@ -379,6 +395,12 @@ private:
     int   vco1Wave         = 0;
     int   vco2Wave         = 0;
     bool  hardSync         = false;
+    float clickFreqHz       = 800.0f;
+    float clickDecaySeconds = 0.015f;
+    float clickLevelVal     = 0.0f;
+    bool  clickActive       = false;
+    float clickEnvPhase     = 0.0f;
+    float clickFilt         = 0.0f;
     std::array<float, 6> metalPhases {};
     float smoothedAmp      = 0.0f;
     float ampDezipperCoeff = 1.0f;

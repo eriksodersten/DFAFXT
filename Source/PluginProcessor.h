@@ -153,6 +153,10 @@ public:
     juce::SmoothedValue<float> smoothedVolume;
     juce::SmoothedValue<float> smoothedVco1Level;
     juce::SmoothedValue<float> smoothedVco2Level;
+    juce::SmoothedValue<float> smoothedPreDrive;
+    juce::SmoothedValue<float> smoothedPostDrive;
+    float lfoPhase = 0.0f;
+    float lfoValue = 0.0f;
     // -------------------------------------------------------------------------
     // Patch system
     // -------------------------------------------------------------------------
@@ -177,7 +181,7 @@ private:
     std::unique_ptr<juce::XmlElement> createStateXml();
     void restoreStateFromXml(const juce::XmlElement& xml, const juce::String& presetNameOverride);
 
-    static constexpr size_t kNumMidiCcBindings = 103;
+    static constexpr size_t kNumMidiCcBindings = 134;
     void initialiseMidiCcBindings();
     void applyMidiCc(int ccNumber, int ccValue);
 

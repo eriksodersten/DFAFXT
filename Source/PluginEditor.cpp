@@ -691,6 +691,70 @@ XTEditor::XTEditor(XTProcessor& p)
     vco2EgAmount.setDoubleClickReturnValue(true, 0.0);
     vcfEgAmount.setDoubleClickReturnValue(true, 0.0);
 
+    // Click
+    addKnob(clickTune); addKnob(clickDecay); addKnob(clickLevel);
+
+    // New filter/amp
+    addKnob(vcaAttack); addKnob(preDrive); addKnob(postDrive);
+
+    // Mod mode combos
+    for (int i = 0; i < 3; ++i)
+    {
+        modModeBox[i].addItem("UNI", 1);
+        modModeBox[i].addItem("BI",  2);
+        modModeBox[i].addItem("INV", 3);
+        addChoice(modModeBox[i]);
+    }
+
+    // LFO
+    addKnob(lfoRate); addKnob(lfoAmt);
+    lfoWaveBox.addItem("TRI", 1); lfoWaveBox.addItem("SAW", 2);
+    lfoWaveBox.addItem("SQR", 3); lfoWaveBox.addItem("RND", 4);
+    addChoice(lfoWaveBox);
+    lfoSyncBox.addItem("OFF", 1); lfoSyncBox.addItem("ON", 2);
+    addChoice(lfoSyncBox);
+    lfoRetrigBox.addItem("OFF", 1); lfoRetrigBox.addItem("ON", 2);
+    addChoice(lfoRetrigBox);
+    lfoDstBox.setJustificationType(juce::Justification::centred);
+    {
+        const auto lfoDestNames = XTProcessor::getModDestinationNames();
+        for (int i = 0; i < lfoDestNames.size(); ++i)
+            lfoDstBox.addItem(lfoDestNames[i], i + 1);
+    }
+    addChoice(lfoDstBox);
+
+    // Step active buttons
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        stepActiveButton[i].setClickingTogglesState(true);
+        stepActiveButton[i].setToggleState(true, juce::dontSendNotification);
+        addAndMakeVisible(stepActiveButton[i]);
+    }
+
+    // New attachments
+    clickTuneAtt  = std::make_unique<SliderAttachment>(apvts, "clickTune",  clickTune);
+    clickDecayAtt = std::make_unique<SliderAttachment>(apvts, "clickDecay", clickDecay);
+    clickLevelAtt = std::make_unique<SliderAttachment>(apvts, "clickLevel", clickLevel);
+    vcaAttackAtt  = std::make_unique<SliderAttachment>(apvts, "vcaAttack",  vcaAttack);
+    preDriveAtt   = std::make_unique<SliderAttachment>(apvts, "preDrive",   preDrive);
+    postDriveAtt  = std::make_unique<SliderAttachment>(apvts, "postDrive",  postDrive);
+    for (int i = 0; i < 3; ++i)
+    {
+        const auto modeId = juce::String("mod") + juce::String::charToString((juce_wchar)('A' + i)) + "Mode";
+        modModeBoxAtt[i] = std::make_unique<ComboAttachment>(apvts, modeId, modModeBox[i]);
+    }
+    lfoRateAtt     = std::make_unique<SliderAttachment>(apvts, "lfoRate",   lfoRate);
+    lfoAmtAtt      = std::make_unique<SliderAttachment>(apvts, "lfoAmt",    lfoAmt);
+    lfoWaveBoxAtt  = std::make_unique<ComboAttachment>(apvts, "lfoWave",   lfoWaveBox);
+    lfoSyncBoxAtt  = std::make_unique<ComboAttachment>(apvts, "lfoSync",   lfoSyncBox);
+    lfoRetrigBoxAtt = std::make_unique<ComboAttachment>(apvts, "lfoRetrig", lfoRetrigBox);
+    lfoDstBoxAtt   = std::make_unique<ComboAttachment>(apvts, "lfoDest",   lfoDstBox);
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        const auto id = makeStepParameterId("stepActive", i);
+        stepActiveAtt[i] = std::make_unique<ButtonAttachment>(apvts, id, stepActiveButton[i]);
+    }
+
     refreshPresetControls();
 }
 
@@ -884,7 +948,7 @@ void XTEditor::paint(juce::Graphics& g)
     };
     line(42, 98, 1670, 98);
     line(42, 442, 1670, 442);
-    line(498, 109, 498, 432, 0.8f);
+    // No divider at x=498: OSC and MIXER are merged
     line(806, 109, 806, 432, 0.8f);
     line(1360, 109, 1360, 432, 0.8f);
     line(1463, 109, 1463, 432, 0.8f);
@@ -937,9 +1001,8 @@ void XTEditor::paint(juce::Graphics& g)
     g.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
     g.drawText("SINGLE-VOICE PERCUSSION SYNTHESIZER", ref(63, 72, 350, 16), juce::Justification::left, false);
 
-    drawTitle("OSCILLATORS / INTERACTION", 150, 113, 294);
-    drawTitle("MIX / TRANSIENT", 566, 113, 178);
-    drawTitle("FILTER / AMP / DRIVE", 866, 113, 252);
+    drawTitle("OSC / MIXER", 250, 113, 400);
+    drawTitle("FILTER / AMP", 866, 113, 252);
     drawTitle("MODULATION", 1177, 113, 190);
     drawTitle("LFO", 1522, 113, 82);
     drawTitle("TRANSPORT", 95, 457, 138);
@@ -973,81 +1036,52 @@ void XTEditor::paint(juce::Graphics& g)
     // VCO2 LEVEL at (278,325) is now a live widget — no placeholder needed
     drawPlaceholderKnob(351, 332, 46);     // VCO2 LVL — no param yet
 
-    // MIX section — noiseLevel is LIVE; VCO 1 + VCO 2 moved to osc section
-    drawLabel("VCO 1", 507, 218, 50);
-    drawLabel("VCO 2", 580, 218, 50);
-    drawLabel("NOISE", 652, 218, 58);
-    drawPlaceholderKnob(507, 166, 46);    // MIX VCO 1 slot — no param
-    drawPlaceholderKnob(580, 166, 46);    // MIX VCO 2 slot — no param
-    // Bottom row: fmAmount is LIVE; CLK controls have no param
+    // OSC / MIXER merged section — click controls are LIVE
+    drawLabel("CLICK TUN", 507, 218, 60);
+    drawLabel("CLICK DEC", 580, 218, 60);
+    drawLabel("NOISE", 653, 218, 50);
+    // Bottom row: fmAmount is LIVE; clickLevel is LIVE
     drawLabel("FM AMT", 507, 326, 68);
-    drawLabel("CLK TUNE", 580, 326, 72);
-    drawLabel("CLK DEC", 653, 326, 68);
-    drawLabel("CLK LVL", 725, 326, 64);
-    drawPlaceholderKnob(592, 281, 42);     // CLK TUNE — no param
-    drawPlaceholderKnob(665, 281, 42);     // CLK DEC — no param
-    drawPlaceholderKnob(738, 281, 42);     // CLK LVL — no param
+    drawLabel("CLK LVL", 726, 326, 64);
     drawLabel("SIGNAL FLOW", 608, 380, 90);
     g.setColour(kDivider.withAlpha(0.6f));
     g.drawRoundedRectangle(ref(526, 388, 249, 32).toFloat(), 3.0f, 0.8f);
     drawMuted("VCO1 + VCO2 + NOISE + CLICK → FILTER → DRIVE → VCA → OUT", 531, 399, 238);
 
-    // FILTER — all knobs live; row 1 = VCF/volume, row 2 = decay/amp envelope
+    // FILTER / AMP — 5-column layout
     drawLabel("MODE",         816, 134, 68);
+    // Row 1 labels
     drawLabel("CUTOFF",       806, 250, 90);
-    drawLabel("RESONANCE",    876, 250, 92);
+    drawLabel("RESONANCE",    878, 250, 92);
     drawLabel("VCF EG AMT",   946, 250, 96);
-    drawLabel("VOLUME",      1020, 250, 84);
-    drawLabel("VCF DEC",      820, 344, 76);
-    drawLabel("VCA DEC",      892, 344, 76);
-    drawLabel("VCA EG",       964, 344, 76);
-    drawLabel("NOISE MOD",   1020, 344, 84);
-    drawPlaceholderBox(819, 372, 24, 24);
-    drawPlaceholderBox(849, 372, 24, 24);
-    drawPlaceholderBox(879, 372, 24, 24);
-    drawPlaceholderBox(969, 372, 24, 24);
-    drawPlaceholderBox(1021, 372, 24, 24);
-    drawPlaceholderBox(1051, 372, 24, 24);
-    drawPlaceholderBox(1081, 372, 24, 24);
-    drawLabel("ENV", 813, 402, 30);
-    drawLabel("GATE", 844, 402, 34);
-    drawLabel("MAN", 875, 402, 30);
-    drawLabel("ENV", 1009, 402, 30);
-    drawLabel("GATE", 1039, 402, 34);
-    drawLabel("MAN", 1070, 402, 30);
+    drawLabel("VCF DEC",     1020, 250, 84);
+    drawLabel("PRE DRV",     1094, 250, 76);
+    // Row 2 labels
+    drawLabel("NOISE MOD",    806, 344, 84);
+    drawLabel("VCA ATCK",     878, 344, 84);
+    drawLabel("VCA DEC",      946, 344, 76);
+    drawLabel("VOLUME",      1020, 344, 84);
+    drawLabel("POST DRV",    1094, 344, 76);
 
-    drawPlaceholderKnob(1190, 181, 46);
-    drawPlaceholderKnob(1274, 181, 46);
-    drawPlaceholderKnob(1358, 181, 46);
     drawLabel("MOD A", 1173, 154, 52);
     drawLabel("MOD B", 1256, 154, 52);
     drawLabel("MOD C", 1341, 154, 52);
+    drawLabel("MODE", 1160, 183, 70);
+    drawLabel("MODE", 1244, 183, 70);
+    drawLabel("MODE", 1328, 183, 70);
     drawLabel("DEST", 1192, 243, 42);
     drawLabel("DEST", 1276, 243, 42);
     drawLabel("DEST", 1360, 243, 42);
     drawLabel("AMT", 1192, 349, 42);
     drawLabel("AMT", 1276, 349, 42);
     drawLabel("AMT", 1360, 349, 42);
-    drawLabel("MODE", 1192, 402, 42);
-    drawLabel("MODE", 1276, 402, 42);
-    drawLabel("MODE", 1360, 402, 42);
-    for (float x : { 1168.0f, 1198.0f, 1228.0f, 1252.0f, 1282.0f, 1312.0f, 1338.0f, 1368.0f, 1398.0f })
-        drawPlaceholderBox(x, 388, 18, 18);
 
-    drawPlaceholderKnob(1526, 205, 52);
-    drawPlaceholderKnob(1608, 205, 52);
-    drawLabel("ACTIVE", 1533, 142, 64);
-    drawLabel("RATE", 1523, 265, 54);
-    drawLabel("WAVE", 1607, 265, 54);
-    drawPlaceholderBox(1512, 296, 28, 28);
-    drawPlaceholderBox(1558, 296, 28, 28);
-    drawPlaceholderBox(1605, 296, 28, 28);
-    drawLabel("FREE", 1509, 337, 38);
-    drawLabel("SYNC", 1553, 337, 38);
-    drawLabel("STEP", 1601, 337, 38);
-    drawMuted("SYNC", 1499, 399, 42);
-    drawMuted("MIDI", 1548, 399, 42);
-    drawMuted("INTERNAL", 1590, 399, 72);
+    drawLabel("RATE",   1480, 241, 54);
+    drawLabel("AMT",    1557, 241, 54);
+    drawLabel("WAVE",   1480, 288, 70);
+    drawLabel("DEST",   1480, 334, 70);
+    drawLabel("SYNC",   1558, 296, 46);
+    drawLabel("RETRIG", 1558, 348, 46);
 
     drawPlaceholderKnob(84, 541, 58, XTKnobStyle::transport);
     drawPlaceholderKnob(187, 546, 52, XTKnobStyle::transport);
@@ -1105,11 +1139,7 @@ void XTEditor::paint(juce::Graphics& g)
         g.drawText(juce::String(i + 1), juce::Rectangle<float>(centreX - 12.0f, padY - 18.0f, 24.0f, 10.0f),
                    juce::Justification::centred, false);
 
-        g.setColour(kDarkPlate);
-        g.fillRoundedRectangle(centreX - 12.0f, padY, 24.0f, 24.0f, 3.0f);
-        g.setColour(kDarkEdge.withAlpha(0.9f));
-        g.drawRoundedRectangle(centreX - 12.0f, padY, 24.0f, 24.0f, 3.0f, 1.0f);
-
+        // Static pad rect removed — stepActiveButton[i] widget IS the pad now
         g.setColour(kPanelBase);
         g.fillEllipse(centreX - 7.0f, ledY - 7.0f, 14.0f, 14.0f);
 
@@ -1190,33 +1220,49 @@ void XTEditor::resized()
     vco2WaveBox.setBounds(ref(205.0f, 339.0f, 58.0f, 24.0f));
     vco2Level.setBounds(ref(278.0f, 325.0f, 50.0f, 50.0f));
 
-    // --- MIX / TRANSIENT ---
-    // Top row: noiseLevel; vco1Level and vco2Level moved to osc section
+    // --- OSC / MIXER (merged) ---
+    // Click controls
+    clickTune.setBounds(ref(507.0f, 166.0f, 50.0f, 50.0f));
+    clickDecay.setBounds(ref(580.0f, 166.0f, 50.0f, 50.0f));
     noiseLevel.setBounds(ref(653.0f, 166.0f, 50.0f, 50.0f));
-    // Bottom row: FM AMT live; CLK controls placeholder only
+    clickLevel.setBounds(ref(726.0f, 272.0f, 50.0f, 50.0f));
+    // Bottom row: FM AMT live
     fmAmount.setBounds(ref(507.0f, 272.0f, 50.0f, 50.0f));
 
     // --- FILTER / AMP / DRIVE ---
-    // Filter section: x=806–1360. MOD controls start at x=1160 → filter knobs must end by ~1100.
-    // Stride 72, size 62 → end at 820+3*72+62=1098.
     vcfModeBox.setBounds(ref(820.0f, 143.0f, 64.0f, 26.0f));
+    // Row 1: cutoff, resonance, vcfEgAmt, vcfDecay, preDrive
     cutoff.setBounds(ref(820.0f, 178.0f, 62.0f, 62.0f));
     resonance.setBounds(ref(892.0f, 178.0f, 62.0f, 62.0f));
     vcfEgAmount.setBounds(ref(964.0f, 178.0f, 62.0f, 62.0f));
-    volume.setBounds(ref(1036.0f, 178.0f, 62.0f, 62.0f));
-    // Row 2: decay + amp envelope
-    vcfDecay.setBounds(ref(820.0f, 272.0f, 62.0f, 62.0f));
-    vcaDecay.setBounds(ref(892.0f, 272.0f, 62.0f, 62.0f));
-    vcaEg.setBounds(ref(964.0f, 272.0f, 62.0f, 62.0f));
-    noiseVcfMod.setBounds(ref(1036.0f, 272.0f, 62.0f, 62.0f));
+    vcfDecay.setBounds(ref(1036.0f, 178.0f, 62.0f, 62.0f));
+    preDrive.setBounds(ref(1108.0f, 178.0f, 62.0f, 62.0f));
+    // Row 2: noiseVcfMod, vcaAttack, vcaDecay, volume, postDrive
+    noiseVcfMod.setBounds(ref(820.0f, 272.0f, 62.0f, 62.0f));
+    vcaAttack.setBounds(ref(892.0f, 272.0f, 62.0f, 62.0f));
+    vcaDecay.setBounds(ref(964.0f, 272.0f, 62.0f, 62.0f));
+    volume.setBounds(ref(1036.0f, 272.0f, 62.0f, 62.0f));
+    postDrive.setBounds(ref(1108.0f, 272.0f, 62.0f, 62.0f));
+    vcaEg.setVisible(false);
 
     // --- MODULATION ---
+    modModeBox[0].setBounds(ref(1160.0f, 195.0f, 70.0f, 26.0f));
+    modModeBox[1].setBounds(ref(1244.0f, 195.0f, 70.0f, 26.0f));
+    modModeBox[2].setBounds(ref(1328.0f, 195.0f, 70.0f, 26.0f));
     modDestBox[0].setBounds(ref(1160.0f, 245.0f, 70.0f, 26.0f));
     modDestBox[1].setBounds(ref(1244.0f, 245.0f, 70.0f, 26.0f));
     modDestBox[2].setBounds(ref(1328.0f, 245.0f, 70.0f, 26.0f));
     modAmount[0].setBounds(ref(1173.0f, 328.0f, 54.0f, 54.0f));
     modAmount[1].setBounds(ref(1257.0f, 328.0f, 54.0f, 54.0f));
     modAmount[2].setBounds(ref(1341.0f, 328.0f, 54.0f, 54.0f));
+
+    // --- LFO ---
+    lfoRate.setBounds(ref(1480.0f, 178.0f, 54.0f, 54.0f));
+    lfoAmt.setBounds(ref(1557.0f, 178.0f, 54.0f, 54.0f));
+    lfoWaveBox.setBounds(ref(1480.0f, 253.0f, 70.0f, 26.0f));
+    lfoDstBox.setBounds(ref(1480.0f, 298.0f, 70.0f, 26.0f));
+    lfoSyncBox.setBounds(ref(1558.0f, 248.0f, 46.0f, 40.0f));
+    lfoRetrigBox.setBounds(ref(1558.0f, 300.0f, 46.0f, 40.0f));
 
     // --- TRANSPORT ---
     clockMultBox.setBounds(ref(43.0f, 618.0f, 68.0f, 24.0f));
@@ -1237,5 +1283,11 @@ void XTEditor::resized()
         stepModA[i].setBounds(ref(x, stepKnobTop + stepRowStride * 2.0f, stepKnobSize, stepKnobSize));
         stepModB[i].setBounds(ref(x, stepKnobTop + stepRowStride * 3.0f, stepKnobSize, stepKnobSize));
         stepModC[i].setBounds(ref(x, stepKnobTop + stepRowStride * 4.0f, stepKnobSize, stepKnobSize));
+
+        // Step active button: above the pitch knob
+        auto pitchBounds = ref(x, stepKnobTop, stepKnobSize, stepKnobSize);
+        const int cx = pitchBounds.getCentreX();
+        const int padTop = pitchBounds.getY() - 39;
+        stepActiveButton[i].setBounds(cx - 12, padTop, 24, 24);
     }
 }

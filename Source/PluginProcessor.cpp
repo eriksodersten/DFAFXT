@@ -121,6 +121,50 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
         params.push_back(std::make_unique<juce::AudioParameterChoice>("vcfMode", "VCF Mode",
                 juce::StringArray({ "LP", "HP" }), 0));
 
+    // Click
+    auto clickTuneRange = juce::NormalisableRange<float>(20.0f, 8000.0f);
+    clickTuneRange.setSkewForCentre(600.0f);
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("clickTune",  "Click Tune",  clickTuneRange, 800.0f));
+    auto clickDecayRange = juce::NormalisableRange<float>(0.001f, 0.2f);
+    clickDecayRange.setSkewForCentre(0.02f);
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("clickDecay", "Click Decay", clickDecayRange, 0.015f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("clickLevel", "Click Level", 0.0f, 1.0f, 0.0f));
+
+    // VCA attack (separate param, decoupled from vcaEg)
+    auto vcaAttackRange = juce::NormalisableRange<float>(0.001f, 0.5f);
+    vcaAttackRange.setSkewForCentre(0.02f);
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("vcaAttack", "VCA Attack", vcaAttackRange, 0.001f));
+
+    // Drive
+    auto driveRange = juce::NormalisableRange<float>(1.0f, 10.0f);
+    driveRange.setSkewForCentre(2.5f);
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("preDrive",  "Pre Drive",  driveRange, 1.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("postDrive", "Post Drive", driveRange, 1.0f));
+
+    // Mod mode (Uni/Bi/Inv)
+    juce::StringArray modModes { "UNI", "BI", "INV" };
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("modAMode", "Mod A Mode", modModes, 1));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("modBMode", "Mod B Mode", modModes, 1));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("modCMode", "Mod C Mode", modModes, 1));
+
+    // LFO
+    auto lfoRateRange = juce::NormalisableRange<float>(0.01f, 20.0f);
+    lfoRateRange.setSkewForCentre(2.0f);
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("lfoRate", "LFO Rate", lfoRateRange, 1.0f));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("lfoWave", "LFO Wave",
+        juce::StringArray({ "TRI", "SAW", "SQR", "RND" }), 0));
+    params.push_back(std::make_unique<juce::AudioParameterBool>("lfoSync",   "LFO Sync",   false));
+    params.push_back(std::make_unique<juce::AudioParameterBool>("lfoRetrig", "LFO Retrig", false));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("lfoDest", "LFO Dest",
+        XTProcessor::getModDestinationNames(), 0));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("lfoAmt", "LFO Amt", 0.0f, 1.0f, 0.5f));
+
+    // Step active x 16
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+        params.push_back(std::make_unique<juce::AudioParameterBool>(
+            makeStepParameterId("stepActive", i),
+            "Step Active " + juce::String(i + 1), true));
+
     return { params.begin(), params.end() };
 }
 
@@ -464,6 +508,24 @@ void XTProcessor::initialiseMidiCcBindings()
     addBinding(cc++, "vcfMode");
     addBinding(cc++, "clockMult");
 
+    // New params
+    addBinding(cc++, "clickTune");
+    addBinding(cc++, "clickDecay");
+    addBinding(cc++, "clickLevel");
+    addBinding(cc++, "vcaAttack");
+    addBinding(cc++, "preDrive");
+    addBinding(cc++, "postDrive");
+    addBinding(cc++, "modAMode");
+    addBinding(cc++, "modBMode");
+    addBinding(cc++, "modCMode");
+    addBinding(cc++, "lfoRate");
+    addBinding(cc++, "lfoWave");
+    addBinding(cc++, "lfoSync");
+    addBinding(cc++, "lfoRetrig");
+    addBinding(cc++, "lfoDest");
+    addBinding(cc++, "lfoAmt");
+    for (int i = 0; i < XTSequencer::numSteps; ++i) addBinding(cc++, makeStepParameterId("stepActive", i));
+
     jassert(bindingIndex == midiCcBindings.size());
 }
 
@@ -509,10 +571,14 @@ void XTProcessor::prepareToPlay(double sampleRate, int)
     smoothedVolume.reset(sampleRate, 0.01);
     smoothedVco1Level.reset(sampleRate, 0.01);
     smoothedVco2Level.reset(sampleRate, 0.01);
+    smoothedPreDrive.reset(sampleRate, 0.01);
+    smoothedPostDrive.reset(sampleRate, 0.01);
     smoothedCutoff.setCurrentAndTargetValue(apvts.getRawParameterValue("cutoff")->load());
     smoothedVolume.setCurrentAndTargetValue(apvts.getRawParameterValue("volume")->load());
     smoothedVco1Level.setCurrentAndTargetValue(apvts.getRawParameterValue("vco1Level")->load());
     smoothedVco2Level.setCurrentAndTargetValue(apvts.getRawParameterValue("vco2Level")->load());
+    smoothedPreDrive.setCurrentAndTargetValue(apvts.getRawParameterValue("preDrive")->load());
+    smoothedPostDrive.setCurrentAndTargetValue(apvts.getRawParameterValue("postDrive")->load());
 }
 void XTProcessor::releaseResources() {}
 
@@ -634,6 +700,26 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         float noiseVcfMod   = apvts.getRawParameterValue("noiseVcfMod")->load();    float noiseLevelVal = apvts.getRawParameterValue("noiseLevel")->load();
     float vcaEgVal      = apvts.getRawParameterValue("vcaEg")->load();
         float preTrimVal    = apvts.getRawParameterValue("preTrim")->load();
+    float clickTuneVal  = apvts.getRawParameterValue("clickTune")->load();
+    float clickDecayVal = apvts.getRawParameterValue("clickDecay")->load();
+    float clickLevelVal = apvts.getRawParameterValue("clickLevel")->load();
+    float vcaAttackVal  = apvts.getRawParameterValue("vcaAttack")->load();
+    float preDriveVal   = apvts.getRawParameterValue("preDrive")->load();
+    float postDriveVal  = apvts.getRawParameterValue("postDrive")->load();
+    int   modAModeVal   = (int)apvts.getRawParameterValue("modAMode")->load();
+    int   modBModeVal   = (int)apvts.getRawParameterValue("modBMode")->load();
+    int   modCModeVal   = (int)apvts.getRawParameterValue("modCMode")->load();
+    float lfoRateVal    = apvts.getRawParameterValue("lfoRate")->load();
+    int   lfoWaveVal    = (int)apvts.getRawParameterValue("lfoWave")->load();
+    float lfoAmtVal     = apvts.getRawParameterValue("lfoAmt")->load();
+    XTModDestination lfoDestVal = choiceToModDestination(
+        (int)apvts.getRawParameterValue("lfoDest")->load());
+    smoothedPreDrive.setTargetValue(preDriveVal);
+    smoothedPostDrive.setTargetValue(postDriveVal);
+
+    voice.setClickTune(clickTuneVal);
+    voice.setClickDecay(clickDecayVal);
+    voice.setClickLevel(clickLevelVal);
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
@@ -659,7 +745,15 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     voice.setVcfEgAmount(vcfEgAmt);
     // noise level applied per-sample after cable snapshot – see below
     voice.setVcaEgAmount(vcaEgVal);
-    voice.setVcaAttackTime(0.001f + vcaEgVal * 0.099f);
+    voice.setVcaAttackTime(vcaAttackVal);
+
+    auto applyModMode = [](float raw, int mode) -> float {
+        switch (mode) {
+            case 0: return raw; // UNI: 0-1
+            case 2: return 1.0f - raw * 2.0f; // INV
+            default: return raw * 2.0f - 1.0f; // BI (default)
+        }
+    };
 
     // Seqlock snapshot – audio thread never takes a lock.
     // Retries only if a message-thread write lands exactly during the copy (extremely rare).
@@ -716,15 +810,18 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
                 const auto& step = sequencer.getStep(currentStep);
                 currentVelocity = step.velocity;
                 currentPitch    = (step.pitch - 60.0f) / 60.0f;
-                currentModA     = centredSequencerMod(step.modA);
-                currentModB     = centredSequencerMod(step.modB);
-                currentModC     = centredSequencerMod(step.modC);
+                currentModA     = applyModMode(step.modA, modAModeVal);
+                currentModB     = applyModMode(step.modB, modBModeVal);
+                currentModC     = applyModMode(step.modC, modCModeVal);
                 patchSourceValues[PP_VELOCITY] = currentVelocity;
                 patchSourceValues[PP_PITCH]    = currentPitch;
                 patchSourceValues[PP_MOD_A]    = currentModA;
                 patchSourceValues[PP_MOD_B]    = currentModB;
                 patchSourceValues[PP_MOD_C]    = currentModC;
-                voice.trigger(step.pitch, step.velocity);
+                bool stepIsActive = apvts.getRawParameterValue(
+                    makeStepParameterId("stepActive", currentStep))->load() > 0.5f;
+                if (stepIsActive)
+                    voice.trigger(step.pitch, step.velocity);
             }
         }
         else
@@ -774,6 +871,17 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         applySequencerMod(currentModA, modDestinations[0], modAmounts[0]);
         applySequencerMod(currentModB, modDestinations[1], modAmounts[1]);
         applySequencerMod(currentModC, modDestinations[2], modAmounts[2]);
+
+        // LFO — advance phase per sample
+        lfoPhase += lfoRateVal / (float)currentSampleRate;
+        if (lfoPhase >= 1.0f) lfoPhase -= 1.0f;
+        switch (lfoWaveVal) {
+            case 0: lfoValue = 1.0f - 4.0f * std::abs(lfoPhase - 0.5f); break; // tri
+            case 1: lfoValue = 2.0f * lfoPhase - 1.0f; break; // saw
+            case 2: lfoValue = lfoPhase < 0.5f ? 1.0f : -1.0f; break; // sqr
+            default: break; // random stays constant between phase wraps
+        }
+        applySequencerMod(lfoValue, lfoDestVal, lfoAmtVal * 0.5f);
         cutoffNow = juce::jlimit(20.0f, 20000.0f, cutoffNow * std::pow(2.0f, directCutoffMod * 2.0f));
         volumeNow = juce::jlimit(0.0f, 1.0f, volumeNow + directVolumeMod * 0.5f);
         const float resonanceNow = juce::jlimit(0.0f, 1.0f, resVal + directResonanceMod * 0.5f);
@@ -877,7 +985,19 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         filter.setCutoff(modulatedCutoff);
 
         float vcaGain = juce::jlimit(0.0f, 1.0f, frame.ampGain + patchInputSums[PP_VCA_CV]);
-        float sample  = filter.process(frame.raw * preTrimVal) * vcaGain * volumeNow;
+        float preDriveNow  = smoothedPreDrive.getNextValue();
+        float postDriveNow = smoothedPostDrive.getNextValue();
+        // Pre-filter soft clip (drive)
+        float preGain = preTrimVal * preDriveNow;
+        float preDriven = preGain > 1.01f
+            ? std::tanh(frame.raw * preGain) / std::tanh(preGain)
+            : frame.raw * preGain;
+        float filtered = filter.process(preDriven);
+        float postInput = filtered * vcaGain * volumeNow;
+        // Post-VCA soft clip
+        float sample = postDriveNow > 1.01f
+            ? std::tanh(postInput * postDriveNow) / std::tanh(postDriveNow)
+            : postInput;
         left[i]  = sample;
         right[i] = sample;
     }

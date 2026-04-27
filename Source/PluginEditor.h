@@ -106,6 +106,41 @@ private:
     XTSlider cutoff { XTKnobStyle::main }, resonance { XTKnobStyle::main }, vcfDecay { XTKnobStyle::main }, vcfEgAmount { XTKnobStyle::main }, noiseVcfMod { XTKnobStyle::main }, vcaDecay { XTKnobStyle::main }, vcaEg { XTKnobStyle::main }, volume { XTKnobStyle::main };
     XTSlider modAmount[3] { XTSlider { XTKnobStyle::main }, XTSlider { XTKnobStyle::main }, XTSlider { XTKnobStyle::main } };
 
+    // Click controls
+    XTSlider clickTune  { XTKnobStyle::small };
+    XTSlider clickDecay { XTKnobStyle::small };
+    XTSlider clickLevel { XTKnobStyle::small };
+
+    // New filter/amp controls
+    XTSlider vcaAttack  { XTKnobStyle::main };
+    XTSlider preDrive   { XTKnobStyle::main };
+    XTSlider postDrive  { XTKnobStyle::main };
+
+    // Mod mode combos (one per lane)
+    XTComboBox modModeBox[3] { XTComboBox { XTComboStyle::led },
+                               XTComboBox { XTComboStyle::led },
+                               XTComboBox { XTComboStyle::led } };
+
+    // LFO
+    XTSlider lfoRate { XTKnobStyle::main };
+    XTComboBox lfoWaveBox   { XTComboStyle::led };
+    XTComboBox lfoSyncBox   { XTComboStyle::toggle };
+    XTComboBox lfoRetrigBox { XTComboStyle::toggle };
+    XTComboBox lfoDstBox    { XTComboStyle::led };
+    XTSlider lfoAmt { XTKnobStyle::main };
+
+    // Step active buttons (toggle)
+    XTTextButton stepActiveButton[XTSequencer::numSteps] {
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
+        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led}
+    };
+
     XTComboBox seqPitchModBox { XTComboStyle::led };
     XTComboBox hardSyncBox { XTComboStyle::toggle };
     XTComboBox vco1WaveBox { XTComboStyle::led }, vco2WaveBox { XTComboStyle::led }, vcfModeBox { XTComboStyle::led };
@@ -155,6 +190,14 @@ private:
     std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps];
     std::unique_ptr<SliderAttachment> stepModBAtt[XTSequencer::numSteps];
     std::unique_ptr<SliderAttachment> stepModCAtt[XTSequencer::numSteps];
+
+    std::unique_ptr<SliderAttachment> clickTuneAtt, clickDecayAtt, clickLevelAtt;
+    std::unique_ptr<SliderAttachment> vcaAttackAtt, preDriveAtt, postDriveAtt;
+    std::unique_ptr<ComboAttachment>  modModeBoxAtt[3];
+    std::unique_ptr<SliderAttachment> lfoRateAtt, lfoAmtAtt;
+    std::unique_ptr<ComboAttachment>  lfoWaveBoxAtt, lfoSyncBoxAtt, lfoRetrigBoxAtt, lfoDstBoxAtt;
+    using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
+    std::unique_ptr<ButtonAttachment> stepActiveAtt[XTSequencer::numSteps];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(XTEditor)
 };
