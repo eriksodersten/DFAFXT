@@ -118,11 +118,6 @@ juce::String makeModDestinationParameterId(int index)
 {
     return "mod" + juce::String::charToString((juce_wchar)('A' + index)) + "Dest";
 }
-juce::String makeModAmountParameterId(int index)
-{
-    return "mod" + juce::String::charToString((juce_wchar)('A' + index)) + "Amt";
-}
-
 void drawMutedLabel(juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
                     juce::Justification justification = juce::Justification::centred)
 {
@@ -521,7 +516,6 @@ XTEditor::XTEditor(XTProcessor& p)
     const auto destNames = XTProcessor::getModDestinationNames();
     for (int i = 0; i < 3; ++i)
     {
-        addKnob(modAmount[i]);
         modModeBox[i].addItem("UNI", 1); modModeBox[i].addItem("BI", 2); modModeBox[i].addItem("INV", 3);
         addChoice(modModeBox[i]);
         modDestBox[i].setJustificationType(juce::Justification::centred);
@@ -634,10 +628,8 @@ XTEditor::XTEditor(XTProcessor& p)
     for (int i = 0; i < 3; ++i)
     {
         modDestBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, makeModDestinationParameterId(i), modDestBox[i]);
-        modAmountAtt[i]   = std::make_unique<SliderAttachment>(apvts, makeModAmountParameterId(i),     modAmount[i]);
         const auto modeId = juce::String("mod") + juce::String::charToString((juce_wchar)('A' + i)) + "Mode";
         modModeBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, modeId, modModeBox[i]);
-        setDefault(modAmount[i], makeModAmountParameterId(i));
     }
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
@@ -937,15 +929,12 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("MOD A", 1173, 154, 52);
     drawLabel("MOD B", 1256, 154, 52);
     drawLabel("MOD C", 1341, 154, 52);
-    drawLabel("MODE",  1160, 183, 70);
-    drawLabel("MODE",  1244, 183, 70);
-    drawLabel("MODE",  1328, 183, 70);
-    drawLabel("DEST",  1192, 243, 42);
-    drawLabel("DEST",  1276, 243, 42);
-    drawLabel("DEST",  1360, 243, 42);
-    drawLabel("AMT",   1192, 349, 42);
-    drawLabel("AMT",   1276, 349, 42);
-    drawLabel("AMT",   1360, 349, 42);
+    drawLabel("MODE",  1160, 208, 70);
+    drawLabel("MODE",  1244, 208, 70);
+    drawLabel("MODE",  1328, 208, 70);
+    drawLabel("DEST",  1160, 258, 70);
+    drawLabel("DEST",  1244, 258, 70);
+    drawLabel("DEST",  1328, 258, 70);
 
     // LFO labels
     drawLabel("RATE",   1480, 241, 54);
@@ -1121,9 +1110,8 @@ void XTEditor::resized()
     for (int i = 0; i < 3; ++i)
     {
         const float bx = 1160.0f + (float)i * 84.0f;
-        modModeBox[i].setBounds( ref(bx,        195.0f, 70.0f, 26.0f));
-        modDestBox[i].setBounds( ref(bx,        245.0f, 70.0f, 26.0f));
-        modAmount[i].setBounds(  ref(bx + 13.0f,328.0f, 54.0f, 54.0f));
+        modModeBox[i].setBounds( ref(bx, 220.0f, 70.0f, 26.0f));
+        modDestBox[i].setBounds( ref(bx, 270.0f, 70.0f, 26.0f));
     }
 
     // --- LFO ---

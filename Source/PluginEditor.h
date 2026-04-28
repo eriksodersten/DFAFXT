@@ -139,7 +139,6 @@ private:
     XTSlider postDrive   { XTKnobStyle::main };
 
     // Modulation
-    XTSlider   modAmount[3] { XTSlider{XTKnobStyle::main}, XTSlider{XTKnobStyle::main}, XTSlider{XTKnobStyle::main} };
     XTComboBox modModeBox[3]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
     XTComboBox modDestBox[3]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
 
@@ -200,7 +199,6 @@ private:
     std::unique_ptr<SliderAttachment> clickTuneAtt, clickDecayAtt, clickLevelAtt;
     std::unique_ptr<SliderAttachment> vcaAttackAtt, preDriveAtt, postDriveAtt;
     std::unique_ptr<SliderAttachment> noiseColorAtt, pitchFmAmtAtt, velVcfDecaySensAtt;
-    std::unique_ptr<SliderAttachment> modAmountAtt[3];
     std::unique_ptr<SliderAttachment> lfoRateAtt, lfoAmtAtt;
     std::unique_ptr<SliderAttachment> tempoAtt, swingAtt, stepCountAtt;
     std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps];

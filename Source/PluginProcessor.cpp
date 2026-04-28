@@ -18,11 +18,6 @@ juce::String makeModDestinationParameterId(int index)
     return "mod" + juce::String::charToString((juce_wchar)('A' + index)) + "Dest";
 }
 
-juce::String makeModAmountParameterId(int index)
-{
-    return "mod" + juce::String::charToString((juce_wchar)('A' + index)) + "Amt";
-}
-
 XTModDestination choiceToModDestination(int rawChoice)
 {
     const int clamped = juce::jlimit(0, (int)XTModDestination::Count - 1, rawChoice);
@@ -90,8 +85,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
         const auto sourceName = "Mod " + juce::String::charToString((juce_wchar)('A' + i));
         params.push_back(std::make_unique<juce::AudioParameterChoice>(
             makeModDestinationParameterId(i), sourceName + " Destination", getModDestinationNames(), 0));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            makeModAmountParameterId(i), sourceName + " Amount", 0.0f, 1.0f, 0.5f));
     }
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>("clockMult", "Clock Multiplier",
@@ -538,13 +531,9 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     int   vcoEgShapeVal     = (int)apvts.getRawParameterValue("vcoEgShape")->load();
 
     std::array<XTModDestination, kNumModRoutes> modDestinations;
-    std::array<float, kNumModRoutes> modAmounts {};
     for (int i = 0; i < kNumModRoutes; ++i)
-    {
         modDestinations[(size_t)i] = choiceToModDestination(
             (int)apvts.getRawParameterValue(makeModDestinationParameterId(i))->load());
-        modAmounts[(size_t)i] = apvts.getRawParameterValue(makeModAmountParameterId(i))->load();
-    }
 
     smoothedCutoff.setTargetValue(cutoffVal);
     smoothedVolume.setTargetValue(volumeVal);
@@ -682,9 +671,9 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
             }
         };
 
-        applyMod(currentModA, modDestinations[0], modAmounts[0]);
-        applyMod(currentModB, modDestinations[1], modAmounts[1]);
-        applyMod(currentModC, modDestinations[2], modAmounts[2]);
+        applyMod(currentModA, modDestinations[0], 1.0f);
+        applyMod(currentModB, modDestinations[1], 1.0f);
+        applyMod(currentModC, modDestinations[2], 1.0f);
 
         // --- LFO ---
         float lfoIncrement = lfoSyncVal
