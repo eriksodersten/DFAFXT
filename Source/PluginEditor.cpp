@@ -2,16 +2,16 @@
 
 namespace
 {
-constexpr int kEditorWidth = 1320;
+constexpr int kEditorWidth  = 1320;
 constexpr int kEditorHeight = 800;
 constexpr int kOuterPadding = 10;
-constexpr int kPanelCorner = 12;
-constexpr float kSketchWidth = 1713.0f;
+constexpr int kPanelCorner  = 12;
+constexpr float kSketchWidth  = 1713.0f;
 constexpr float kSketchHeight = 906.0f;
 
-constexpr int kPresetInitId = 1;
+constexpr int kPresetInitId      = 1;
 constexpr int kPresetFirstUserId = 2;
-constexpr int kPresetMissingId = 999;
+constexpr int kPresetMissingId   = 999;
 
 constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneNames
 {
@@ -32,7 +32,7 @@ struct XTLayout
     juce::Rectangle<int> lfo;
     juce::Rectangle<int> transport;
     juce::Rectangle<int> sequencer;
-    int headerLineY = 0;
+    int headerLineY    = 0;
     int sectionDividerY = 0;
 };
 
@@ -51,11 +51,11 @@ const juce::Colour kLedOn     (0xffe8351c);
 const juce::Colour kLedOff    (0xff4a1410);
 const juce::Colour kLedGreen  (0xff30c04a);
 
-juce::Rectangle<int> mapReferenceRect(const juce::Rectangle<int>& target, float x, float y, float w, float h)
+juce::Rectangle<int> mapReferenceRect(const juce::Rectangle<int>& target,
+                                      float x, float y, float w, float h)
 {
-    const auto sx = (float) target.getWidth() / kSketchWidth;
-    const auto sy = (float) target.getHeight() / kSketchHeight;
-
+    const auto sx = (float)target.getWidth()  / kSketchWidth;
+    const auto sy = (float)target.getHeight() / kSketchHeight;
     return {
         target.getX() + juce::roundToInt(x * sx),
         target.getY() + juce::roundToInt(y * sy),
@@ -67,61 +67,60 @@ juce::Rectangle<int> mapReferenceRect(const juce::Rectangle<int>& target, float 
 XTLayout createLayout(int width, int height)
 {
     XTLayout layout;
-    layout.panel = { kOuterPadding, kOuterPadding, width - kOuterPadding * 2, height - kOuterPadding * 2 };
+    layout.panel = { kOuterPadding, kOuterPadding,
+                     width  - kOuterPadding * 2,
+                     height - kOuterPadding * 2 };
 
-    auto inner = layout.panel.reduced(22, 18);
-    const int headerH = juce::roundToInt((float) inner.getHeight() * 0.08f);
-    const int gapOne = juce::roundToInt((float) inner.getHeight() * 0.034f);
-    const int topH = juce::roundToInt((float) inner.getHeight() * 0.405f);
-    const int gapTwo = juce::roundToInt((float) inner.getHeight() * 0.048f);
+    auto inner  = layout.panel.reduced(22, 18);
+    const int headerH = juce::roundToInt((float)inner.getHeight() * 0.08f);
+    const int gapOne  = juce::roundToInt((float)inner.getHeight() * 0.034f);
+    const int topH    = juce::roundToInt((float)inner.getHeight() * 0.405f);
+    const int gapTwo  = juce::roundToInt((float)inner.getHeight() * 0.048f);
 
-    layout.header = inner.removeFromTop(headerH);
-    layout.headerLineY = layout.header.getBottom() + 10;
+    layout.header       = inner.removeFromTop(headerH);
+    layout.headerLineY  = layout.header.getBottom() + 10;
     inner.removeFromTop(gapOne);
-
-    layout.topArea = inner.removeFromTop(topH);
+    layout.topArea       = inner.removeFromTop(topH);
     layout.sectionDividerY = layout.topArea.getBottom() + 14;
     inner.removeFromTop(gapTwo);
-    layout.bottomArea = inner;
+    layout.bottomArea    = inner;
 
-    auto top = layout.topArea;
+    auto top   = layout.topArea;
     const int topW = top.getWidth();
-    layout.oscillators = top.removeFromLeft(juce::roundToInt((float) topW * 0.28f));
-    layout.mixTransient = top.removeFromLeft(juce::roundToInt((float) topW * 0.19f));
-    layout.filter = top.removeFromLeft(juce::roundToInt((float) topW * 0.23f));
-    layout.modulation = top.removeFromLeft(juce::roundToInt((float) topW * 0.18f));
-    layout.lfo = top;
+    layout.oscillators  = top.removeFromLeft(juce::roundToInt((float)topW * 0.28f));
+    layout.mixTransient = top.removeFromLeft(juce::roundToInt((float)topW * 0.19f));
+    layout.filter       = top.removeFromLeft(juce::roundToInt((float)topW * 0.23f));
+    layout.modulation   = top.removeFromLeft(juce::roundToInt((float)topW * 0.18f));
+    layout.lfo          = top;
 
     auto bottom = layout.bottomArea;
-    layout.transport = bottom.removeFromLeft(juce::roundToInt((float) bottom.getWidth() * 0.19f));
+    layout.transport  = bottom.removeFromLeft(juce::roundToInt((float)bottom.getWidth() * 0.19f));
     bottom.removeFromLeft(18);
-    layout.sequencer = bottom;
+    layout.sequencer  = bottom;
 
-    layout.presetControls = layout.header.removeFromRight(juce::roundToInt((float) layout.header.getWidth() * 0.27f)).withTrimmedTop(4);
-
+    layout.presetControls = layout.header
+        .removeFromRight(juce::roundToInt((float)layout.header.getWidth() * 0.27f))
+        .withTrimmedTop(4);
     return layout;
 }
 
 juce::File getDefaultPresetDirectory()
 {
     return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("DFAFXT")
-        .getChildFile("Presets");
+        .getChildFile("DFAFXT").getChildFile("Presets");
 }
 
 juce::String makeStepParameterId(const char* prefix, int index)
 {
     return juce::String(prefix) + juce::String(index);
 }
-
 juce::String makeModDestinationParameterId(int index)
 {
-    return "mod" + juce::String::charToString((juce_wchar) ('A' + index)) + "Dest";
+    return "mod" + juce::String::charToString((juce_wchar)('A' + index)) + "Dest";
 }
-
 juce::String makeModAmountParameterId(int index)
 {
-    return "mod" + juce::String::charToString((juce_wchar) ('A' + index)) + "Amt";
+    return "mod" + juce::String::charToString((juce_wchar)('A' + index)) + "Amt";
 }
 
 void drawMutedLabel(juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
@@ -132,140 +131,117 @@ void drawMutedLabel(juce::Graphics& g, juce::Rectangle<int> bounds, const juce::
     g.drawFittedText(text, bounds, justification, 1);
 }
 
-void drawKnobBody(juce::Graphics& g, juce::Point<float> centre, float size, float normalizedValue, XTKnobStyle style)
+void drawKnobBody(juce::Graphics& g, juce::Point<float> centre, float size,
+                  float normalizedValue, XTKnobStyle style)
 {
     const float radius = size * 0.5f;
     const float x = centre.x - radius;
     const float y = centre.y - radius;
 
-    // Drop shadow directly beneath — single soft ellipse, no chrome.
-    const float shadowOffset = size * 0.08f;
     g.setColour(juce::Colour(0x55000000));
-    g.fillEllipse(x + 1.0f, y + shadowOffset, size, size);
+    g.fillEllipse(x + 1.0f, y + size * 0.08f, size, size);
 
-    // Body: near-black with a subtle top-down gradient so the edge reads.
     juce::ColourGradient bodyGrad(kKnobTop, centre.x, y + 1.0f,
                                   kKnobBody, centre.x, y + size, false);
     g.setGradientFill(bodyGrad);
     g.fillEllipse(x, y, size, size);
 
-    // Sharp dark rim — one pixel, no bezel ring, no chrome.
     g.setColour(kKnobEdge);
     g.drawEllipse(x + 0.25f, y + 0.25f, size - 0.5f, size - 0.5f, 0.8f);
 
-    // Tiny outer tick dots at min / center / max (three subtle marks on the panel).
     if (style != XTKnobStyle::sequencer)
     {
         const float dotRadius = juce::jmax(0.7f, size * 0.025f);
-        auto dotAt = [&](float ang)
-        {
+        auto dotAt = [&](float ang) {
             const float cx = centre.x + (radius + size * 0.14f) * std::cos(ang - juce::MathConstants<float>::halfPi);
             const float cy = centre.y + (radius + size * 0.14f) * std::sin(ang - juce::MathConstants<float>::halfPi);
             g.setColour(kInk.withAlpha(0.55f));
             g.fillEllipse(cx - dotRadius, cy - dotRadius, dotRadius * 2.0f, dotRadius * 2.0f);
         };
         const float sweep = juce::MathConstants<float>::pi * 0.74f;
-        dotAt(-sweep);
-        dotAt(0.0f);
-        dotAt(sweep);
+        dotAt(-sweep); dotAt(0.0f); dotAt(sweep);
     }
 
-    // Pointer: single thin cream tick from centre to near-edge.
     const float pointerAngle = juce::jmap(normalizedValue, 0.0f, 1.0f,
-                                          -juce::MathConstants<float>::pi * 0.74f,
-                                          juce::MathConstants<float>::pi * 0.74f);
-    const auto direction = juce::Point<float>(std::cos(pointerAngle - juce::MathConstants<float>::halfPi),
-                                              std::sin(pointerAngle - juce::MathConstants<float>::halfPi));
-    const float pointerInner = style == XTKnobStyle::sequencer ? 0.15f : 0.12f;
-    const float pointerOuter = style == XTKnobStyle::sequencer ? 0.82f : 0.86f;
-    const auto inner = centre + direction * (radius * pointerInner);
-    const auto outer = centre + direction * (radius * pointerOuter);
-    const float pointerThickness = style == XTKnobStyle::sequencer ? 1.6f
-                                 : style == XTKnobStyle::main ? 2.4f
-                                 : 2.0f;
+        -juce::MathConstants<float>::pi * 0.74f,
+         juce::MathConstants<float>::pi * 0.74f);
+    const auto dir   = juce::Point<float>(
+        std::cos(pointerAngle - juce::MathConstants<float>::halfPi),
+        std::sin(pointerAngle - juce::MathConstants<float>::halfPi));
+    const float pInner = style == XTKnobStyle::sequencer ? 0.15f : 0.12f;
+    const float pOuter = style == XTKnobStyle::sequencer ? 0.82f : 0.86f;
+    const auto  inner  = centre + dir * (radius * pInner);
+    const auto  outer  = centre + dir * (radius * pOuter);
+    const float thick  = style == XTKnobStyle::sequencer ? 1.6f
+                       : style == XTKnobStyle::main      ? 2.4f : 2.0f;
     g.setColour(juce::Colour(0xfff5efe0));
-    g.drawLine(inner.x, inner.y, outer.x, outer.y, pointerThickness);
-}
-
-void drawStaticKnob(juce::Graphics& g, juce::Point<float> centre, float size, XTKnobStyle style = XTKnobStyle::main)
-{
-    drawKnobBody(g, centre, size, 0.5f, style);
+    g.drawLine(inner.x, inner.y, outer.x, outer.y, thick);
 }
 
 XTKnobStyle getKnobStyle(const juce::Slider& slider)
 {
-    if (const auto* xtSlider = dynamic_cast<const XTSlider*>(&slider))
-        return xtSlider->style;
-
+    if (const auto* s = dynamic_cast<const XTSlider*>(&slider)) return s->style;
     return XTKnobStyle::main;
 }
-
 XTComboStyle getComboStyle(const juce::ComboBox& box)
 {
-    if (const auto* xtBox = dynamic_cast<const XTComboBox*>(&box))
-        return xtBox->style;
-
+    if (const auto* b = dynamic_cast<const XTComboBox*>(&box)) return b->style;
     return XTComboStyle::led;
 }
-
 XTButtonStyle getButtonStyle(const juce::Button& button)
 {
-    if (const auto* xtButton = dynamic_cast<const XTTextButton*>(&button))
-        return xtButton->style;
-
+    if (const auto* b = dynamic_cast<const XTTextButton*>(&button)) return b->style;
     return XTButtonStyle::utility;
 }
 
-}
+} // namespace
+
+// =============================================================================
+// XTLookAndFeel
+// =============================================================================
 
 XTLookAndFeel::XTLookAndFeel()
 {
-    setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xffd4c7ae));
+    setColour(juce::Slider::rotarySliderFillColourId,    juce::Colour(0xffd4c7ae));
     setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xff282826));
-    setColour(juce::Slider::thumbColourId, juce::Colours::white);
-
-    setColour(juce::ComboBox::backgroundColourId, kDarkPlate);
-    setColour(juce::ComboBox::outlineColourId, kDarkEdge);
-    setColour(juce::ComboBox::textColourId, juce::Colour(0xffefe7d8));
-    setColour(juce::ComboBox::arrowColourId, juce::Colour(0xffefe7d8));
+    setColour(juce::Slider::thumbColourId,               juce::Colours::white);
+    setColour(juce::ComboBox::backgroundColourId,  kDarkPlate);
+    setColour(juce::ComboBox::outlineColourId,     kDarkEdge);
+    setColour(juce::ComboBox::textColourId,        juce::Colour(0xffefe7d8));
+    setColour(juce::ComboBox::arrowColourId,       juce::Colour(0xffefe7d8));
     setColour(juce::PopupMenu::backgroundColourId, juce::Colour(0xff201f1d));
-    setColour(juce::PopupMenu::textColourId, juce::Colour(0xffefe7d8));
+    setColour(juce::PopupMenu::textColourId,       juce::Colour(0xffefe7d8));
     setColour(juce::PopupMenu::highlightedBackgroundColourId, juce::Colour(0xff9e2f24));
-
-    setColour(juce::TextButton::buttonColourId, kDarkPlate);
-    setColour(juce::TextButton::buttonOnColourId, kAccentRed);
-    setColour(juce::TextButton::textColourOffId, juce::Colour(0xffefe7d8));
-    setColour(juce::TextButton::textColourOnId, juce::Colour(0xffefe7d8));
+    setColour(juce::TextButton::buttonColourId,    kDarkPlate);
+    setColour(juce::TextButton::buttonOnColourId,  kAccentRed);
+    setColour(juce::TextButton::textColourOffId,   juce::Colour(0xffefe7d8));
+    setColour(juce::TextButton::textColourOnId,    juce::Colour(0xffefe7d8));
 }
 
 void XTLookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
-                                     float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
-                                     juce::Slider& slider)
+                                     float sliderPos, float, float, juce::Slider& slider)
 {
-    juce::ignoreUnused(rotaryStartAngle, rotaryEndAngle);
-    const auto style = getKnobStyle(slider);
-    const float size = (float) juce::jmin(width, height) - (style == XTKnobStyle::sequencer ? 2.0f : 4.0f);
-    const auto centre = juce::Point<float>((float) x + (float) width * 0.5f, (float) y + (float) height * 0.5f);
+    const auto style  = getKnobStyle(slider);
+    const float size  = (float)juce::jmin(width, height) - (style == XTKnobStyle::sequencer ? 2.0f : 4.0f);
+    const auto centre = juce::Point<float>((float)x + (float)width * 0.5f,
+                                           (float)y + (float)height * 0.5f);
     drawKnobBody(g, centre, size, sliderPos, style);
 }
 
 void XTLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool,
-                                 int, int, int, int,
-                                 juce::ComboBox& box)
+                                 int, int, int, int, juce::ComboBox& box)
 {
-    const auto style = getComboStyle(box);
-    const auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float) width - 1.0f, (float) height - 1.0f);
+    const auto style  = getComboStyle(box);
+    const auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
 
     if (style == XTComboStyle::led)
     {
-        // Near-black body with very faint inner glow from bottom
         g.setColour(juce::Colour(0xff080706));
         g.fillRoundedRectangle(bounds, 3.0f);
-        juce::ColourGradient glow(kAmberText.withAlpha(0.07f), (float) width * 0.5f, (float) height,
-                                  juce::Colours::transparentBlack, (float) width * 0.5f, 0.0f, false);
+        juce::ColourGradient glow(kAmberText.withAlpha(0.07f), (float)width * 0.5f, (float)height,
+                                  juce::Colours::transparentBlack, (float)width * 0.5f, 0.0f, false);
         g.setGradientFill(glow);
         g.fillRoundedRectangle(bounds, 3.0f);
-        // Amber border
         g.setColour(kAmberText.withAlpha(0.45f));
         g.drawRoundedRectangle(bounds, 3.0f, 1.0f);
         return;
@@ -273,30 +249,25 @@ void XTLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool,
 
     if (style == XTComboStyle::toggle)
     {
-        // Dark housing
         g.setColour(juce::Colour(0xff0c0b0a));
         g.fillRoundedRectangle(bounds, 5.0f);
         g.setColour(juce::Colour(0xff282422));
         g.drawRoundedRectangle(bounds, 5.0f, 1.2f);
 
-        // Slot line down the center
-        const float slotX = (float) width * 0.5f - 1.5f;
+        const float slotX = (float)width * 0.5f - 1.5f;
         g.setColour(juce::Colour(0xff1e1c1a));
         g.fillRoundedRectangle(slotX, bounds.getY() + 6.0f, 3.0f, bounds.getHeight() - 12.0f, 1.5f);
 
-        // Toggle tab: item 1 = OFF (top half), item 2 = ON (bottom half)
-        const bool isOn = (box.getSelectedId() == 2);
-        const float tabH = bounds.getHeight() * 0.42f;
-        const float margin = bounds.getHeight() * 0.09f;
-        const float tabY = isOn ? (bounds.getBottom() - tabH - margin) : (bounds.getY() + margin);
-        const float tabX = bounds.getX() + bounds.getWidth() * 0.12f;
-        const float tabW = bounds.getWidth() * 0.76f;
+        const bool   isOn = (box.getSelectedId() == 2);
+        const float  tabH = bounds.getHeight() * 0.42f;
+        const float  margin = bounds.getHeight() * 0.09f;
+        const float  tabY = isOn ? (bounds.getBottom() - tabH - margin) : (bounds.getY() + margin);
+        const float  tabX = bounds.getX() + bounds.getWidth() * 0.12f;
+        const float  tabW = bounds.getWidth() * 0.76f;
 
-        // Tab drop shadow
         g.setColour(juce::Colour(0x55000000));
         g.fillRoundedRectangle(tabX + 1.0f, tabY + 2.0f, tabW, tabH, 4.0f);
 
-        // Tab body gradient
         juce::ColourGradient tabGrad(juce::Colour(0xff404038), tabX, tabY,
                                      juce::Colour(0xff262421), tabX, tabY + tabH, false);
         g.setGradientFill(tabGrad);
@@ -304,30 +275,24 @@ void XTLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool,
         g.setColour(juce::Colour(0xff171512));
         g.drawRoundedRectangle(tabX, tabY, tabW, tabH, 4.0f, 1.0f);
 
-        // LED dot in center of tab
         const float ledCX = tabX + tabW * 0.5f;
         const float ledCY = tabY + tabH * 0.5f;
-        const float ledR = tabW * 0.12f;
-        g.setColour(isOn ? kLedOn.withAlpha(0.6f) : juce::Colour(0x00000000));
-        if (isOn)
-        {
-            g.fillEllipse(ledCX - ledR * 2.2f, ledCY - ledR * 2.2f, ledR * 4.4f, ledR * 4.4f);
+        const float ledR  = tabW * 0.12f;
+        if (isOn) {
+            g.setColour(kLedOn.withAlpha(0.6f));
+            g.fillEllipse(ledCX - ledR*2.2f, ledCY - ledR*2.2f, ledR*4.4f, ledR*4.4f);
         }
         g.setColour(isOn ? kLedOn : kLedOff);
-        g.fillEllipse(ledCX - ledR, ledCY - ledR, ledR * 2.0f, ledR * 2.0f);
+        g.fillEllipse(ledCX - ledR, ledCY - ledR, ledR*2.0f, ledR*2.0f);
 
-        // OFF / ON text labels on housing
         g.setColour(juce::Colour(0xffefe7d8).withAlpha(0.55f));
         g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
-        const float labelW = (float) width;
-        if (! isOn)
-        {
-            g.setColour(juce::Colour(0xffefe7d8));
-        }
-        g.drawText("OFF", 0, (int) bounds.getY() + 3, width, 10, juce::Justification::centred, false);
-        g.setColour(juce::Colour(0xffefe7d8).withAlpha(isOn ? 1.0f : 0.55f));
-        g.drawText("ON", 0, (int) bounds.getBottom() - 13, width, 10, juce::Justification::centred, false);
+        const float labelW = (float)width;
         juce::ignoreUnused(labelW);
+        if (!isOn) g.setColour(juce::Colour(0xffefe7d8));
+        g.drawText("OFF", 0, (int)bounds.getY() + 3, width, 10, juce::Justification::centred, false);
+        g.setColour(juce::Colour(0xffefe7d8).withAlpha(isOn ? 1.0f : 0.55f));
+        g.drawText("ON",  0, (int)bounds.getBottom() - 13, width, 10, juce::Justification::centred, false);
         return;
     }
 
@@ -339,33 +304,27 @@ void XTLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool,
     g.setColour(kDarkEdge);
     g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
     juce::Path chevron;
-    chevron.startNewSubPath((float) width - 24.0f, (float) height * 0.42f);
-    chevron.lineTo((float) width - 16.0f, (float) height * 0.62f);
-    chevron.lineTo((float) width - 8.0f, (float) height * 0.42f);
+    chevron.startNewSubPath((float)width - 24.0f, (float)height * 0.42f);
+    chevron.lineTo((float)width - 16.0f, (float)height * 0.62f);
+    chevron.lineTo((float)width - 8.0f,  (float)height * 0.42f);
     g.setColour(juce::Colour(0xffefe7d8));
-    g.strokePath(chevron, juce::PathStrokeType(1.8f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.strokePath(chevron, juce::PathStrokeType(1.8f, juce::PathStrokeType::curved,
+                                                juce::PathStrokeType::rounded));
 }
 
 void XTLookAndFeel::positionComboBoxText(juce::ComboBox& box, juce::Label& label)
 {
     const auto style = getComboStyle(box);
-
-    if (style == XTComboStyle::toggle)
-    {
-        label.setBounds(0, 0, 0, 0);
-        return;
-    }
-
+    if (style == XTComboStyle::toggle) { label.setBounds(0,0,0,0); return; }
     if (style == XTComboStyle::led)
     {
-        label.setBounds(2, 0, box.getWidth() - 4, box.getHeight());
+        label.setBounds(2, 0, box.getWidth()-4, box.getHeight());
         label.setJustificationType(juce::Justification::centred);
         label.setColour(juce::Label::textColourId, kAmberText);
         label.setFont(getComboBoxFont(box));
         return;
     }
-
-    label.setBounds(10, 0, box.getWidth() - 28, box.getHeight());
+    label.setBounds(10, 0, box.getWidth()-28, box.getHeight());
     label.setFont(getComboBoxFont(box));
     label.setJustificationType(juce::Justification::centred);
 }
@@ -374,14 +333,16 @@ juce::Font XTLookAndFeel::getComboBoxFont(juce::ComboBox& box)
 {
     const auto style = getComboStyle(box);
     if (style == XTComboStyle::led)
-        return juce::Font(juce::FontOptions((float) juce::jmin(12, box.getHeight() - 4)).withStyle("Bold"));
+        return juce::Font(juce::FontOptions((float)juce::jmin(12, box.getHeight()-4)).withStyle("Bold"));
     if (style == XTComboStyle::preset)
         return juce::Font(juce::FontOptions(11.0f).withStyle("Bold"));
-    return juce::Font(juce::FontOptions((float) juce::jmin(13, box.getHeight() - 6)).withStyle("Bold"));
+    return juce::Font(juce::FontOptions((float)juce::jmin(13, box.getHeight()-6)).withStyle("Bold"));
 }
 
-void XTLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour&,
-                                         bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+void XTLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
+                                         const juce::Colour&,
+                                         bool shouldDrawButtonAsHighlighted,
+                                         bool shouldDrawButtonAsDown)
 {
     auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
     const auto style = getButtonStyle(button);
@@ -389,29 +350,24 @@ void XTLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button
     if (style == XTButtonStyle::led)
     {
         const bool on = button.getToggleState() || shouldDrawButtonAsDown;
-        const float w = bounds.getWidth();
-        const float h = bounds.getHeight();
+        const float w = bounds.getWidth(), h = bounds.getHeight();
 
-        // Dark square housing
         g.setColour(juce::Colour(0xff0c0b0a));
         g.fillRoundedRectangle(bounds, 3.0f);
         g.setColour(juce::Colour(0xff282422));
         g.drawRoundedRectangle(bounds, 3.0f, 1.0f);
 
-        // LED dot — top third of the button, centered
-        const float ledR = juce::jmin(w, h) * 0.14f;
+        const float ledR  = juce::jmin(w, h) * 0.14f;
         const float ledCX = bounds.getCentreX();
         const float ledCY = bounds.getY() + h * 0.32f;
-
-        if (on)
-        {
+        if (on) {
             g.setColour(kLedOn.withAlpha(0.35f));
-            g.fillEllipse(ledCX - ledR * 2.8f, ledCY - ledR * 2.8f, ledR * 5.6f, ledR * 5.6f);
+            g.fillEllipse(ledCX - ledR*2.8f, ledCY - ledR*2.8f, ledR*5.6f, ledR*5.6f);
         }
         g.setColour(on ? kLedOn : kLedOff);
-        g.fillEllipse(ledCX - ledR, ledCY - ledR, ledR * 2.0f, ledR * 2.0f);
+        g.fillEllipse(ledCX - ledR, ledCY - ledR, ledR*2.0f, ledR*2.0f);
         g.setColour(on ? juce::Colour(0xff7f1d15) : juce::Colour(0xff181818));
-        g.drawEllipse(ledCX - ledR, ledCY - ledR, ledR * 2.0f, ledR * 2.0f, 0.8f);
+        g.drawEllipse(ledCX - ledR, ledCY - ledR, ledR*2.0f, ledR*2.0f, 0.8f);
 
         if (shouldDrawButtonAsHighlighted && !on)
         {
@@ -423,18 +379,14 @@ void XTLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button
 
     auto fill = kDarkPlate;
     const bool isSquare = style == XTButtonStyle::square;
-
-    if (shouldDrawButtonAsDown)
-        fill = fill.brighter(0.12f);
-    else if (shouldDrawButtonAsHighlighted)
-        fill = fill.brighter(0.06f);
+    if (shouldDrawButtonAsDown)        fill = fill.brighter(0.12f);
+    else if (shouldDrawButtonAsHighlighted) fill = fill.brighter(0.06f);
 
     if (style == XTButtonStyle::utility)
     {
         g.setColour(kDarkEdge.withAlpha(0.18f));
         g.fillRoundedRectangle(bounds.translated(0.0f, 1.0f), 6.0f);
     }
-
     g.setColour(fill);
     g.fillRoundedRectangle(bounds, isSquare ? 3.0f : 6.0f);
     g.setColour(kDarkEdge);
@@ -443,27 +395,28 @@ void XTLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button
 
 void XTLookAndFeel::drawButtonText(juce::Graphics& g, juce::TextButton& button, bool, bool)
 {
-    if (button.getButtonText().isEmpty())
-        return;
-
+    if (button.getButtonText().isEmpty()) return;
     const auto style = getButtonStyle(button);
     if (style == XTButtonStyle::led)
     {
-        // Label sits in the bottom ~55% of the button, below the LED
         const auto bounds = button.getLocalBounds();
-        const int textY = bounds.getY() + juce::roundToInt((float) bounds.getHeight() * 0.52f);
+        const int textY = bounds.getY() + juce::roundToInt((float)bounds.getHeight() * 0.52f);
         g.setFont(juce::FontOptions(7.5f).withStyle("Bold"));
         g.setColour(juce::Colour(0xffefe7d8).withAlpha(0.85f));
-        g.drawFittedText(button.getButtonText(),
-                         bounds.getX(), textY, bounds.getWidth(), bounds.getBottom() - textY,
+        g.drawFittedText(button.getButtonText(), bounds.getX(), textY,
+                         bounds.getWidth(), bounds.getBottom() - textY,
                          juce::Justification::centred, 1);
         return;
     }
-
     g.setFont(juce::FontOptions(style == XTButtonStyle::square ? 7.5f : 8.5f).withStyle("Bold"));
     g.setColour(juce::Colour(0xffefe7d8));
-    g.drawFittedText(button.getButtonText(), button.getLocalBounds(), juce::Justification::centred, 1);
+    g.drawFittedText(button.getButtonText(), button.getLocalBounds(),
+                     juce::Justification::centred, 1);
 }
+
+// =============================================================================
+// XTEditor constructor
+// =============================================================================
 
 XTEditor::XTEditor(XTProcessor& p)
     : AudioProcessorEditor(&p), xtProcessor(p)
@@ -472,22 +425,16 @@ XTEditor::XTEditor(XTProcessor& p)
     setLookAndFeel(&laf);
     startTimerHz(24);
 
+    // --- Preset controls ---
     setupChoice(presetBox);
     presetBox.setJustificationType(juce::Justification::centredLeft);
     presetBox.onChange = [this]()
     {
-        if (isUpdatingPresetBox)
-            return;
-
-        const int selectedId = presetBox.getSelectedId();
-        if (selectedId == kPresetMissingId)
-            return;
-
-        if (selectedId == kPresetInitId)
-            xtProcessor.loadInitPreset();
-        else
-            xtProcessor.loadPreset(presetBox.getText());
-
+        if (isUpdatingPresetBox) return;
+        const int id = presetBox.getSelectedId();
+        if (id == kPresetMissingId) return;
+        if (id == kPresetInitId) xtProcessor.loadInitPreset();
+        else                     xtProcessor.loadPreset(presetBox.getText());
         refreshPresetControls();
     };
     addAndMakeVisible(presetBox);
@@ -499,229 +446,129 @@ XTEditor::XTEditor(XTProcessor& p)
         addAndMakeVisible(button);
     };
 
-    styleButton(presetSaveButton, [this]() { promptSavePreset(); });
+    styleButton(presetSaveButton,   [this]() { promptSavePreset(); });
     styleButton(presetDeleteButton, [this]()
     {
-        const auto presetName = xtProcessor.getCurrentPresetName();
-        if (presetName.isEmpty() || presetName == "Init")
-            return;
-
+        const auto name = xtProcessor.getCurrentPresetName();
+        if (name.isEmpty() || name == "Init") return;
         if (juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
-                                               "Delete Preset",
-                                               "Delete preset \"" + presetName + "\"?",
-                                               "Delete",
-                                               "Cancel",
-                                               this,
-                                               nullptr))
+            "Delete Preset", "Delete preset \"" + name + "\"?",
+            "Delete", "Cancel", this, nullptr))
         {
-            xtProcessor.deletePreset(presetName);
+            xtProcessor.deletePreset(name);
             refreshPresetControls();
         }
     });
-    styleButton(presetInitButton, [this]()
+    styleButton(presetInitButton, [this]() { xtProcessor.loadInitPreset(); refreshPresetControls(); });
+
+    // --- Transport buttons ---
+    runStopButton.setClickingTogglesState(true);
+    runStopButton.onClick = [this]()
     {
-        xtProcessor.loadInitPreset();
-        refreshPresetControls();
-    });
+        bool running = xtProcessor.internalTransportRunning.load(std::memory_order_relaxed);
+        xtProcessor.internalTransportRunning.store(!running, std::memory_order_relaxed);
+        if (!running) xtProcessor.resetSequencer();
+        runStopButton.setToggleState(!running, juce::dontSendNotification);
+    };
+    addAndMakeVisible(runStopButton);
+
+    triggerButton.setClickingTogglesState(false);
+    triggerButton.onClick = [this]() { xtProcessor.triggerPending.store(true, std::memory_order_relaxed); };
+    addAndMakeVisible(triggerButton);
+
+    advanceButton.setClickingTogglesState(false);
+    advanceButton.onClick = [this]() { xtProcessor.advancePending.store(true, std::memory_order_relaxed); };
+    addAndMakeVisible(advanceButton);
 
     resetButton.onClick = [this]()
     {
         xtProcessor.resetSequencer();
-        currentLedStep = 0;
-        resetLedActive = true;
+        currentLedStep  = 0;
+        resetLedActive  = true;
         repaint();
     };
     resetButton.setButtonText({});
     resetButton.setTooltip("Reset Sequencer");
     addAndMakeVisible(resetButton);
 
-    auto addKnob = [this](XTSlider& slider)
-    {
-        setupKnob(slider);
-        addAndMakeVisible(slider);
-    };
+    // --- Knobs / combos ---
+    auto addKnob   = [this](XTSlider&   s) { setupKnob(s);   addAndMakeVisible(s); };
+    auto addChoice = [this](XTComboBox& b) { setupChoice(b);  addAndMakeVisible(b); };
 
-    auto addChoice = [this](XTComboBox& box)
-    {
-        setupChoice(box);
-        addAndMakeVisible(box);
-    };
+    // OSC
+    addKnob(vcoDecay);    addKnob(vco1EgAmount);  addKnob(vco1Frequency);
+    addKnob(fmAmount);    addKnob(vco2EgAmount);  addKnob(vco2Frequency);
+    addKnob(vco1Level);   addKnob(vco2Level);     addKnob(noiseLevel);
+    addKnob(vco2Decay);
 
-    addKnob(vcoDecay);
-    addKnob(vco1EgAmount);
-    addKnob(vco1Frequency);
-    addKnob(fmAmount);
-    addKnob(vco2EgAmount);
-    addKnob(vco2Frequency);
-    addKnob(vco1Level);
-    addKnob(vco2Level);
-    addKnob(noiseLevel);
-    addKnob(cutoff);
-    addKnob(resonance);
-    addKnob(vcfDecay);
-    addKnob(vcfEgAmount);
-    addKnob(noiseVcfMod);
-    addKnob(vcaDecay);
-    addKnob(vcaEg);
-    addKnob(volume);
+    vcoEgShapeBox.addItem("EXP", 1); vcoEgShapeBox.addItem("LIN", 2); vcoEgShapeBox.addItem("LOG", 3);
+    addChoice(vcoEgShapeBox);
 
-    seqPitchModBox.addItem("VCO 1&2", 1);
-    seqPitchModBox.addItem("OFF", 2);
-    seqPitchModBox.addItem("VCO 2", 3);
-    addChoice(seqPitchModBox);
+    // Click / mix
+    addKnob(clickTune);  addKnob(clickDecay);  addKnob(clickLevel);
+    addKnob(noiseColor); addKnob(pitchFmAmt);  addKnob(velVcfDecaySens);
 
-    hardSyncBox.addItem("OFF", 1);
-    hardSyncBox.addItem("ON", 2);
-    addChoice(hardSyncBox);
+    // Filter / amp
+    addKnob(cutoff);     addKnob(resonance);   addKnob(vcfDecay);
+    addKnob(vcfEgAmount); addKnob(noiseVcfMod); addKnob(vcaDecay);
+    addKnob(vcaEg);      addKnob(volume);      addKnob(vcaAttack);
+    addKnob(preDrive);   addKnob(postDrive);
 
-    vco1WaveBox.addItem("SQUARE", 1);
-    vco1WaveBox.addItem("TRIANGLE", 2);
-    vco1WaveBox.addItem("METAL", 3);
-    addChoice(vco1WaveBox);
-
-    vco2WaveBox.addItem("SQUARE", 1);
-    vco2WaveBox.addItem("TRIANGLE", 2);
-    addChoice(vco2WaveBox);
-
-    vcfModeBox.addItem("LP", 1);
-    vcfModeBox.addItem("HP", 2);
+    vcfModeBox.addItem("LP", 1); vcfModeBox.addItem("HP", 2);
     addChoice(vcfModeBox);
 
-    const auto destinationNames = XTProcessor::getModDestinationNames();
+    // Modulation lanes
+    const auto destNames = XTProcessor::getModDestinationNames();
     for (int i = 0; i < 3; ++i)
     {
         addKnob(modAmount[i]);
-        modDestBox[i].setJustificationType(juce::Justification::centred);
-        for (int item = 0; item < destinationNames.size(); ++item)
-            modDestBox[i].addItem(destinationNames[item], item + 1);
-        addChoice(modDestBox[i]);
-    }
-
-    clockMultBox.addItem("1/8", 1);
-    clockMultBox.addItem("1/5", 2);
-    clockMultBox.addItem("1/4", 3);
-    clockMultBox.addItem("1/3", 4);
-    clockMultBox.addItem("1/2", 5);
-    clockMultBox.addItem("1X", 6);
-    clockMultBox.addItem("2X", 7);
-    clockMultBox.addItem("3X", 8);
-    clockMultBox.addItem("4X", 9);
-    clockMultBox.addItem("5X", 10);
-    addChoice(clockMultBox);
-
-    for (int i = 0; i < XTSequencer::numSteps; ++i)
-    {
-        stepPitch[i].style = XTKnobStyle::sequencer;
-        stepVelocity[i].style = XTKnobStyle::sequencer;
-        stepModA[i].style = XTKnobStyle::sequencer;
-        stepModB[i].style = XTKnobStyle::sequencer;
-        stepModC[i].style = XTKnobStyle::sequencer;
-
-        addKnob(stepPitch[i]);
-        addKnob(stepVelocity[i]);
-        addKnob(stepModA[i]);
-        addKnob(stepModB[i]);
-        addKnob(stepModC[i]);
-    }
-
-    auto& apvts = p.apvts;
-    auto setDoubleClickToDefault = [&apvts](juce::Slider& slider, const juce::String& parameterId)
-    {
-        if (auto* parameter = dynamic_cast<juce::RangedAudioParameter*>(apvts.getParameter(parameterId)))
-            slider.setDoubleClickReturnValue(true, parameter->convertFrom0to1(parameter->getDefaultValue()));
-    };
-
-    vcoDecayAtt = std::make_unique<SliderAttachment>(apvts, "vcoDecay", vcoDecay);
-    vco1FreqAtt = std::make_unique<SliderAttachment>(apvts, "vco1Freq", vco1Frequency);
-    vco1EgAmtAtt = std::make_unique<SliderAttachment>(apvts, "vco1EgAmt", vco1EgAmount);
-    fmAmountAtt = std::make_unique<SliderAttachment>(apvts, "fmAmount", fmAmount);
-    vco2FreqAtt = std::make_unique<SliderAttachment>(apvts, "vco2Freq", vco2Frequency);
-    vco2EgAmtAtt = std::make_unique<SliderAttachment>(apvts, "vco2EgAmt", vco2EgAmount);
-    vco1LevelAtt = std::make_unique<SliderAttachment>(apvts, "vco1Level", vco1Level);
-    vco2LevelAtt = std::make_unique<SliderAttachment>(apvts, "vco2Level", vco2Level);
-    noiseLevelAtt = std::make_unique<SliderAttachment>(apvts, "noiseLevel", noiseLevel);
-    cutoffAtt = std::make_unique<SliderAttachment>(apvts, "cutoff", cutoff);
-    resonanceAtt = std::make_unique<SliderAttachment>(apvts, "resonance", resonance);
-    vcfDecayAtt = std::make_unique<SliderAttachment>(apvts, "vcfDecay", vcfDecay);
-    vcfEgAmtAtt = std::make_unique<SliderAttachment>(apvts, "vcfEgAmt", vcfEgAmount);
-    noiseVcfModAtt = std::make_unique<SliderAttachment>(apvts, "noiseVcfMod", noiseVcfMod);
-    vcaDecayAtt = std::make_unique<SliderAttachment>(apvts, "vcaDecay", vcaDecay);
-    vcaEgAtt = std::make_unique<SliderAttachment>(apvts, "vcaEg", vcaEg);
-    volumeAtt = std::make_unique<SliderAttachment>(apvts, "volume", volume);
-
-    seqPitchModBoxAtt = std::make_unique<ComboAttachment>(apvts, "seqPitchMod", seqPitchModBox);
-    hardSyncBoxAtt = std::make_unique<ComboAttachment>(apvts, "hardSync", hardSyncBox);
-    vco1WaveBoxAtt = std::make_unique<ComboAttachment>(apvts, "vco1Wave", vco1WaveBox);
-    vco2WaveBoxAtt = std::make_unique<ComboAttachment>(apvts, "vco2Wave", vco2WaveBox);
-    vcfModeBoxAtt = std::make_unique<ComboAttachment>(apvts, "vcfMode", vcfModeBox);
-    clockMultBoxAtt = std::make_unique<ComboAttachment>(apvts, "clockMult", clockMultBox);
-
-    for (int i = 0; i < 3; ++i)
-    {
-        const auto modDestId = makeModDestinationParameterId(i);
-        const auto modAmtId = makeModAmountParameterId(i);
-
-        modDestBoxAtt[i] = std::make_unique<ComboAttachment>(apvts, modDestId, modDestBox[i]);
-        modAmountAtt[i] = std::make_unique<SliderAttachment>(apvts, modAmtId, modAmount[i]);
-        setDoubleClickToDefault(modAmount[i], modAmtId);
-    }
-
-    for (int i = 0; i < XTSequencer::numSteps; ++i)
-    {
-        const auto stepPitchId = makeStepParameterId("stepPitch", i);
-        const auto stepVelId = makeStepParameterId("stepVel", i);
-        const auto stepModAId = makeStepParameterId("stepModA", i);
-        const auto stepModBId = makeStepParameterId("stepModB", i);
-        const auto stepModCId = makeStepParameterId("stepModC", i);
-
-        stepPitchAtt[i] = std::make_unique<SliderAttachment>(apvts, stepPitchId, stepPitch[i]);
-        stepVelAtt[i] = std::make_unique<SliderAttachment>(apvts, stepVelId, stepVelocity[i]);
-        stepModAAtt[i] = std::make_unique<SliderAttachment>(apvts, stepModAId, stepModA[i]);
-        stepModBAtt[i] = std::make_unique<SliderAttachment>(apvts, stepModBId, stepModB[i]);
-        stepModCAtt[i] = std::make_unique<SliderAttachment>(apvts, stepModCId, stepModC[i]);
-
-        setDoubleClickToDefault(stepPitch[i], stepPitchId);
-        setDoubleClickToDefault(stepVelocity[i], stepVelId);
-        setDoubleClickToDefault(stepModA[i], stepModAId);
-        setDoubleClickToDefault(stepModB[i], stepModBId);
-        setDoubleClickToDefault(stepModC[i], stepModCId);
-    }
-
-    vco1EgAmount.setDoubleClickReturnValue(true, 0.0);
-    vco2EgAmount.setDoubleClickReturnValue(true, 0.0);
-    vcfEgAmount.setDoubleClickReturnValue(true, 0.0);
-
-    // Click
-    addKnob(clickTune); addKnob(clickDecay); addKnob(clickLevel);
-
-    // New filter/amp
-    addKnob(vcaAttack); addKnob(preDrive); addKnob(postDrive);
-
-    // Mod mode combos
-    for (int i = 0; i < 3; ++i)
-    {
-        modModeBox[i].addItem("UNI", 1);
-        modModeBox[i].addItem("BI",  2);
-        modModeBox[i].addItem("INV", 3);
+        modModeBox[i].addItem("UNI", 1); modModeBox[i].addItem("BI", 2); modModeBox[i].addItem("INV", 3);
         addChoice(modModeBox[i]);
+        modDestBox[i].setJustificationType(juce::Justification::centred);
+        for (int item = 0; item < destNames.size(); ++item)
+            modDestBox[i].addItem(destNames[item], item + 1);
+        addChoice(modDestBox[i]);
     }
 
     // LFO
     addKnob(lfoRate); addKnob(lfoAmt);
-    lfoWaveBox.addItem("TRI", 1); lfoWaveBox.addItem("SAW", 2);
-    lfoWaveBox.addItem("SQR", 3); lfoWaveBox.addItem("RND", 4);
+    lfoWaveBox.addItem("TRI",1); lfoWaveBox.addItem("SAW",2);
+    lfoWaveBox.addItem("SQR",3); lfoWaveBox.addItem("RND",4);
     addChoice(lfoWaveBox);
-    lfoSyncBox.addItem("OFF", 1); lfoSyncBox.addItem("ON", 2);
-    addChoice(lfoSyncBox);
-    lfoRetrigBox.addItem("OFF", 1); lfoRetrigBox.addItem("ON", 2);
-    addChoice(lfoRetrigBox);
+    lfoSyncBox.addItem("OFF",1);   lfoSyncBox.addItem("ON",2);   addChoice(lfoSyncBox);
+    lfoRetrigBox.addItem("OFF",1); lfoRetrigBox.addItem("ON",2); addChoice(lfoRetrigBox);
     lfoDstBox.setJustificationType(juce::Justification::centred);
-    {
-        const auto lfoDestNames = XTProcessor::getModDestinationNames();
-        for (int i = 0; i < lfoDestNames.size(); ++i)
-            lfoDstBox.addItem(lfoDestNames[i], i + 1);
-    }
+    for (int i = 0; i < destNames.size(); ++i) lfoDstBox.addItem(destNames[i], i + 1);
     addChoice(lfoDstBox);
+
+    // Sequencer combos
+    seqPitchModBox.addItem("VCO 1&2", 1); seqPitchModBox.addItem("OFF", 2); seqPitchModBox.addItem("VCO 2", 3);
+    addChoice(seqPitchModBox);
+    hardSyncBox.addItem("OFF",1); hardSyncBox.addItem("ON",2); addChoice(hardSyncBox);
+    vco1WaveBox.addItem("SQUARE",1); vco1WaveBox.addItem("TRIANGLE",2); vco1WaveBox.addItem("METAL",3);
+    addChoice(vco1WaveBox);
+    vco2WaveBox.addItem("SQUARE",1); vco2WaveBox.addItem("TRIANGLE",2); addChoice(vco2WaveBox);
+
+    clockMultBox.addItem("1/8",1); clockMultBox.addItem("1/5",2); clockMultBox.addItem("1/4",3);
+    clockMultBox.addItem("1/3",4); clockMultBox.addItem("1/2",5); clockMultBox.addItem("1X", 6);
+    clockMultBox.addItem("2X", 7); clockMultBox.addItem("3X", 8); clockMultBox.addItem("4X", 9);
+    clockMultBox.addItem("5X",10);
+    addChoice(clockMultBox);
+
+    // Transport sliders
+    addKnob(tempoSlider); addKnob(swingSlider); addKnob(stepCountSlider);
+
+    // Step lanes
+    for (int i = 0; i < XTSequencer::numSteps; ++i)
+    {
+        stepPitch[i].style    = XTKnobStyle::sequencer;
+        stepVelocity[i].style = XTKnobStyle::sequencer;
+        stepModA[i].style     = XTKnobStyle::sequencer;
+        stepModB[i].style     = XTKnobStyle::sequencer;
+        stepModC[i].style     = XTKnobStyle::sequencer;
+        addKnob(stepPitch[i]);    addKnob(stepVelocity[i]);
+        addKnob(stepModA[i]);     addKnob(stepModB[i]);    addKnob(stepModC[i]);
+    }
 
     // Step active buttons
     for (int i = 0; i < XTSequencer::numSteps; ++i)
@@ -731,29 +578,93 @@ XTEditor::XTEditor(XTProcessor& p)
         addAndMakeVisible(stepActiveButton[i]);
     }
 
-    // New attachments
-    clickTuneAtt  = std::make_unique<SliderAttachment>(apvts, "clickTune",  clickTune);
-    clickDecayAtt = std::make_unique<SliderAttachment>(apvts, "clickDecay", clickDecay);
-    clickLevelAtt = std::make_unique<SliderAttachment>(apvts, "clickLevel", clickLevel);
-    vcaAttackAtt  = std::make_unique<SliderAttachment>(apvts, "vcaAttack",  vcaAttack);
-    preDriveAtt   = std::make_unique<SliderAttachment>(apvts, "preDrive",   preDrive);
-    postDriveAtt  = std::make_unique<SliderAttachment>(apvts, "postDrive",  postDrive);
+    // --- APVTS attachments ---
+    auto& apvts = p.apvts;
+    auto setDefault = [&apvts](juce::Slider& slider, const juce::String& id)
+    {
+        if (auto* param = dynamic_cast<juce::RangedAudioParameter*>(apvts.getParameter(id)))
+            slider.setDoubleClickReturnValue(true, param->convertFrom0to1(param->getDefaultValue()));
+    };
+
+    vcoDecayAtt       = std::make_unique<SliderAttachment>(apvts, "vcoDecay",    vcoDecay);
+    vco1FreqAtt       = std::make_unique<SliderAttachment>(apvts, "vco1Freq",    vco1Frequency);
+    vco1EgAmtAtt      = std::make_unique<SliderAttachment>(apvts, "vco1EgAmt",   vco1EgAmount);
+    fmAmountAtt       = std::make_unique<SliderAttachment>(apvts, "fmAmount",    fmAmount);
+    vco2FreqAtt       = std::make_unique<SliderAttachment>(apvts, "vco2Freq",    vco2Frequency);
+    vco2EgAmtAtt      = std::make_unique<SliderAttachment>(apvts, "vco2EgAmt",   vco2EgAmount);
+    vco1LevelAtt      = std::make_unique<SliderAttachment>(apvts, "vco1Level",   vco1Level);
+    vco2LevelAtt      = std::make_unique<SliderAttachment>(apvts, "vco2Level",   vco2Level);
+    noiseLevelAtt     = std::make_unique<SliderAttachment>(apvts, "noiseLevel",  noiseLevel);
+    vco2DecayAtt      = std::make_unique<SliderAttachment>(apvts, "vco2Decay",   vco2Decay);
+    cutoffAtt         = std::make_unique<SliderAttachment>(apvts, "cutoff",      cutoff);
+    resonanceAtt      = std::make_unique<SliderAttachment>(apvts, "resonance",   resonance);
+    vcfDecayAtt       = std::make_unique<SliderAttachment>(apvts, "vcfDecay",    vcfDecay);
+    vcfEgAmtAtt       = std::make_unique<SliderAttachment>(apvts, "vcfEgAmt",    vcfEgAmount);
+    noiseVcfModAtt    = std::make_unique<SliderAttachment>(apvts, "noiseVcfMod", noiseVcfMod);
+    vcaDecayAtt       = std::make_unique<SliderAttachment>(apvts, "vcaDecay",    vcaDecay);
+    vcaEgAtt          = std::make_unique<SliderAttachment>(apvts, "vcaEg",       vcaEg);
+    volumeAtt         = std::make_unique<SliderAttachment>(apvts, "volume",      volume);
+    clickTuneAtt      = std::make_unique<SliderAttachment>(apvts, "clickTune",   clickTune);
+    clickDecayAtt     = std::make_unique<SliderAttachment>(apvts, "clickDecay",  clickDecay);
+    clickLevelAtt     = std::make_unique<SliderAttachment>(apvts, "clickLevel",  clickLevel);
+    vcaAttackAtt      = std::make_unique<SliderAttachment>(apvts, "vcaAttack",   vcaAttack);
+    preDriveAtt       = std::make_unique<SliderAttachment>(apvts, "preDrive",    preDrive);
+    postDriveAtt      = std::make_unique<SliderAttachment>(apvts, "postDrive",   postDrive);
+    noiseColorAtt     = std::make_unique<SliderAttachment>(apvts, "noiseColor",  noiseColor);
+    pitchFmAmtAtt     = std::make_unique<SliderAttachment>(apvts, "pitchFmAmt",  pitchFmAmt);
+    velVcfDecaySensAtt= std::make_unique<SliderAttachment>(apvts, "velVcfDecaySens", velVcfDecaySens);
+    lfoRateAtt        = std::make_unique<SliderAttachment>(apvts, "lfoRate",     lfoRate);
+    lfoAmtAtt         = std::make_unique<SliderAttachment>(apvts, "lfoAmt",      lfoAmt);
+    tempoAtt          = std::make_unique<SliderAttachment>(apvts, "tempo",       tempoSlider);
+    swingAtt          = std::make_unique<SliderAttachment>(apvts, "swing",       swingSlider);
+    stepCountAtt      = std::make_unique<SliderAttachment>(apvts, "stepCount",   stepCountSlider);
+
+    seqPitchModBoxAtt  = std::make_unique<ComboAttachment>(apvts, "seqPitchMod", seqPitchModBox);
+    hardSyncBoxAtt     = std::make_unique<ComboAttachment>(apvts, "hardSync",    hardSyncBox);
+    vco1WaveBoxAtt     = std::make_unique<ComboAttachment>(apvts, "vco1Wave",    vco1WaveBox);
+    vco2WaveBoxAtt     = std::make_unique<ComboAttachment>(apvts, "vco2Wave",    vco2WaveBox);
+    vcfModeBoxAtt      = std::make_unique<ComboAttachment>(apvts, "vcfMode",     vcfModeBox);
+    clockMultBoxAtt    = std::make_unique<ComboAttachment>(apvts, "clockMult",   clockMultBox);
+    vcoEgShapeBoxAtt   = std::make_unique<ComboAttachment>(apvts, "vcoEgShape",  vcoEgShapeBox);
+    lfoWaveBoxAtt      = std::make_unique<ComboAttachment>(apvts, "lfoWave",     lfoWaveBox);
+    lfoSyncBoxAtt      = std::make_unique<ComboAttachment>(apvts, "lfoSync",     lfoSyncBox);
+    lfoRetrigBoxAtt    = std::make_unique<ComboAttachment>(apvts, "lfoRetrig",   lfoRetrigBox);
+    lfoDstBoxAtt       = std::make_unique<ComboAttachment>(apvts, "lfoDest",     lfoDstBox);
+
     for (int i = 0; i < 3; ++i)
     {
+        modDestBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, makeModDestinationParameterId(i), modDestBox[i]);
+        modAmountAtt[i]   = std::make_unique<SliderAttachment>(apvts, makeModAmountParameterId(i),     modAmount[i]);
         const auto modeId = juce::String("mod") + juce::String::charToString((juce_wchar)('A' + i)) + "Mode";
-        modModeBoxAtt[i] = std::make_unique<ComboAttachment>(apvts, modeId, modModeBox[i]);
+        modModeBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, modeId, modModeBox[i]);
+        setDefault(modAmount[i], makeModAmountParameterId(i));
     }
-    lfoRateAtt     = std::make_unique<SliderAttachment>(apvts, "lfoRate",   lfoRate);
-    lfoAmtAtt      = std::make_unique<SliderAttachment>(apvts, "lfoAmt",    lfoAmt);
-    lfoWaveBoxAtt  = std::make_unique<ComboAttachment>(apvts, "lfoWave",   lfoWaveBox);
-    lfoSyncBoxAtt  = std::make_unique<ComboAttachment>(apvts, "lfoSync",   lfoSyncBox);
-    lfoRetrigBoxAtt = std::make_unique<ComboAttachment>(apvts, "lfoRetrig", lfoRetrigBox);
-    lfoDstBoxAtt   = std::make_unique<ComboAttachment>(apvts, "lfoDest",   lfoDstBox);
+
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
-        const auto id = makeStepParameterId("stepActive", i);
-        stepActiveAtt[i] = std::make_unique<ButtonAttachment>(apvts, id, stepActiveButton[i]);
+        const auto pitchId = makeStepParameterId("stepPitch", i);
+        const auto velId   = makeStepParameterId("stepVel",   i);
+        const auto modAId  = makeStepParameterId("stepModA",  i);
+        const auto modBId  = makeStepParameterId("stepModB",  i);
+        const auto modCId  = makeStepParameterId("stepModC",  i);
+        stepPitchAtt[i] = std::make_unique<SliderAttachment>(apvts, pitchId, stepPitch[i]);
+        stepVelAtt[i]   = std::make_unique<SliderAttachment>(apvts, velId,   stepVelocity[i]);
+        stepModAAtt[i]  = std::make_unique<SliderAttachment>(apvts, modAId,  stepModA[i]);
+        stepModBAtt[i]  = std::make_unique<SliderAttachment>(apvts, modBId,  stepModB[i]);
+        stepModCAtt[i]  = std::make_unique<SliderAttachment>(apvts, modCId,  stepModC[i]);
+        setDefault(stepPitch[i],    pitchId);
+        setDefault(stepVelocity[i], velId);
+        setDefault(stepModA[i],     modAId);
+        setDefault(stepModB[i],     modBId);
+        setDefault(stepModC[i],     modCId);
+        const auto activeId = makeStepParameterId("stepActive", i);
+        stepActiveAtt[i] = std::make_unique<ButtonAttachment>(apvts, activeId, stepActiveButton[i]);
     }
+
+    vco1EgAmount.setDoubleClickReturnValue(true, 0.0);
+    vco2EgAmount.setDoubleClickReturnValue(true, 0.0);
+    vcfEgAmount.setDoubleClickReturnValue(true, 0.0);
+    vcaEg.setVisible(false);
 
     refreshPresetControls();
 }
@@ -775,58 +686,53 @@ void XTEditor::setupKnob(XTSlider& slider)
 void XTEditor::setupChoice(XTComboBox& box)
 {
     box.setJustificationType(juce::Justification::centred);
-
     if (box.style == XTComboStyle::led)
     {
         box.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff080706));
-        box.setColour(juce::ComboBox::outlineColourId, kAmberText.withAlpha(0.45f));
-        box.setColour(juce::ComboBox::textColourId, kAmberText);
-        box.setColour(juce::ComboBox::arrowColourId, juce::Colours::transparentBlack);
+        box.setColour(juce::ComboBox::outlineColourId,    kAmberText.withAlpha(0.45f));
+        box.setColour(juce::ComboBox::textColourId,       kAmberText);
+        box.setColour(juce::ComboBox::arrowColourId,      juce::Colours::transparentBlack);
     }
     else if (box.style == XTComboStyle::toggle)
     {
         box.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff0c0b0a));
-        box.setColour(juce::ComboBox::outlineColourId, juce::Colour(0xff282422));
-        box.setColour(juce::ComboBox::textColourId, juce::Colours::transparentBlack);
-        box.setColour(juce::ComboBox::arrowColourId, juce::Colours::transparentBlack);
+        box.setColour(juce::ComboBox::outlineColourId,    juce::Colour(0xff282422));
+        box.setColour(juce::ComboBox::textColourId,       juce::Colours::transparentBlack);
+        box.setColour(juce::ComboBox::arrowColourId,      juce::Colours::transparentBlack);
     }
     else
     {
         box.setColour(juce::ComboBox::backgroundColourId, kDarkPlate);
-        box.setColour(juce::ComboBox::outlineColourId, kDarkEdge);
-        box.setColour(juce::ComboBox::textColourId, juce::Colour(0xffefe7d8));
-        box.setColour(juce::ComboBox::arrowColourId, juce::Colour(0xffefe7d8));
+        box.setColour(juce::ComboBox::outlineColourId,    kDarkEdge);
+        box.setColour(juce::ComboBox::textColourId,       juce::Colour(0xffefe7d8));
+        box.setColour(juce::ComboBox::arrowColourId,      juce::Colour(0xffefe7d8));
     }
 }
 
 void XTEditor::refreshPresetControls()
 {
-    const auto presetNames = xtProcessor.getAvailablePresetNames();
+    const auto presetNames   = xtProcessor.getAvailablePresetNames();
     const auto currentPreset = xtProcessor.getCurrentPresetName();
 
     isUpdatingPresetBox = true;
     presetBox.clear(juce::dontSendNotification);
     presetBox.addItem("INIT", kPresetInitId);
-
     for (int i = 0; i < presetNames.size(); ++i)
         presetBox.addItem(presetNames[i], kPresetFirstUserId + i);
 
     if (currentPreset.isEmpty() || currentPreset == "Init")
-    {
         presetBox.setSelectedId(kPresetInitId, juce::dontSendNotification);
-    }
     else
     {
-        const int presetIndex = presetNames.indexOf(currentPreset);
-        if (presetIndex >= 0)
-            presetBox.setSelectedId(kPresetFirstUserId + presetIndex, juce::dontSendNotification);
+        const int idx = presetNames.indexOf(currentPreset);
+        if (idx >= 0)
+            presetBox.setSelectedId(kPresetFirstUserId + idx, juce::dontSendNotification);
         else
         {
             presetBox.addItem(currentPreset + " *", kPresetMissingId);
             presetBox.setSelectedId(kPresetMissingId, juce::dontSendNotification);
         }
     }
-
     isUpdatingPresetBox = false;
     lastPresetName = currentPreset;
     updatePresetButtonState();
@@ -834,76 +740,67 @@ void XTEditor::refreshPresetControls()
 
 void XTEditor::promptSavePreset()
 {
-    const auto currentPreset = xtProcessor.getCurrentPresetName();
-    if (currentPreset.isNotEmpty()
-        && currentPreset != "Init"
-        && xtProcessor.getAvailablePresetNames().contains(currentPreset))
+    const auto cur = xtProcessor.getCurrentPresetName();
+    if (cur.isNotEmpty() && cur != "Init" && xtProcessor.getAvailablePresetNames().contains(cur))
     {
         xtProcessor.saveCurrentPreset();
         refreshPresetControls();
         return;
     }
+    auto dir = getDefaultPresetDirectory();
+    dir.createDirectory();
+    const auto suggestedName = cur == "Init" ? juce::String("New Preset") : cur;
+    const auto suggestedFile = dir.getChildFile(suggestedName + ".dfafxtpreset");
 
-    auto presetDirectory = getDefaultPresetDirectory();
-    presetDirectory.createDirectory();
-
-    const auto suggestedName = currentPreset == "Init" ? juce::String("New Preset") : currentPreset;
-    const auto suggestedFile = presetDirectory.getChildFile(suggestedName + ".dfafxtpreset");
-
-    presetSaveChooser = std::make_unique<juce::FileChooser>("Save DFAF XT Preset",
-                                                            suggestedFile,
-                                                            "*.dfafxtpreset");
-
+    presetSaveChooser = std::make_unique<juce::FileChooser>(
+        "Save DFAF XT Preset", suggestedFile, "*.dfafxtpreset");
     presetSaveChooser->launchAsync(juce::FileBrowserComponent::saveMode
                                        | juce::FileBrowserComponent::canSelectFiles,
-                                   [this](const juce::FileChooser& chooser)
-                                   {
-                                       const auto result = chooser.getResult();
-                                       presetSaveChooser.reset();
-
-                                       if (result == juce::File())
-                                           return;
-
-                                       xtProcessor.savePreset(result.getFileNameWithoutExtension());
-                                       refreshPresetControls();
-                                   });
+        [this](const juce::FileChooser& chooser)
+        {
+            const auto result = chooser.getResult();
+            presetSaveChooser.reset();
+            if (result == juce::File()) return;
+            xtProcessor.savePreset(result.getFileNameWithoutExtension());
+            refreshPresetControls();
+        });
 }
 
 void XTEditor::updatePresetButtonState()
 {
-    const auto currentPreset = xtProcessor.getCurrentPresetName();
-    const bool hasSavedPreset = currentPreset.isNotEmpty()
-        && currentPreset != "Init"
-        && xtProcessor.getAvailablePresetNames().contains(currentPreset);
-
-    presetDeleteButton.setEnabled(hasSavedPreset);
+    const auto cur = xtProcessor.getCurrentPresetName();
+    presetDeleteButton.setEnabled(cur.isNotEmpty() && cur != "Init"
+                                  && xtProcessor.getAvailablePresetNames().contains(cur));
 }
 
 juce::String XTEditor::getModLaneSubtitle(int modLaneIndex) const
 {
-    if (! juce::isPositiveAndBelow(modLaneIndex, 3))
-        return {};
-
+    if (!juce::isPositiveAndBelow(modLaneIndex, 3)) return {};
     auto text = modDestBox[modLaneIndex].getText().toUpperCase().trim();
-    if (text.isEmpty() || text == "OFF")
-        text = "ASSIGN";
-
+    if (text.isEmpty() || text == "OFF") text = "ASSIGN";
     return text;
 }
 
 void XTEditor::timerCallback()
 {
-    const auto currentPreset = xtProcessor.getCurrentPresetName();
-    if (currentPreset != lastPresetName)
-        refreshPresetControls();
+    const auto cur = xtProcessor.getCurrentPresetName();
+    if (cur != lastPresetName) refreshPresetControls();
 
     const int step = xtProcessor.getCurrentStep();
-    if (step >= 0)
-        resetLedActive = false;
+    if (step >= 0) resetLedActive = false;
+
+    // Sync RUN/STOP button visual state with processor
+    runStopButton.setToggleState(
+        xtProcessor.internalTransportRunning.load(std::memory_order_relaxed),
+        juce::dontSendNotification);
 
     currentLedStep = resetLedActive ? 0 : step;
     repaint();
 }
+
+// =============================================================================
+// paint()
+// =============================================================================
 
 void XTEditor::paint(juce::Graphics& g)
 {
@@ -915,167 +812,142 @@ void XTEditor::paint(juce::Graphics& g)
 
     g.fillAll(juce::Colour(0xff161513));
 
-    juce::ColourGradient panelGrad(kPanelBase, (float) layout.panel.getX(), (float) layout.panel.getY(),
-                                   kPanelShade, (float) layout.panel.getRight(), (float) layout.panel.getBottom(),
-                                   false);
+    juce::ColourGradient panelGrad(kPanelBase,  (float)layout.panel.getX(),    (float)layout.panel.getY(),
+                                   kPanelShade, (float)layout.panel.getRight(), (float)layout.panel.getBottom(), false);
     g.setGradientFill(panelGrad);
-    g.fillRoundedRectangle(layout.panel.toFloat(), (float) kPanelCorner);
+    g.fillRoundedRectangle(layout.panel.toFloat(), (float)kPanelCorner);
     g.setColour(juce::Colour(0xff2d2a26));
-    g.drawRoundedRectangle(layout.panel.toFloat(), (float) kPanelCorner, 2.0f);
+    g.drawRoundedRectangle(layout.panel.toFloat(), (float)kPanelCorner, 2.0f);
 
-    auto drawScrew = [&g](juce::Rectangle<int> r)
-    {
+    auto drawScrew = [&g](juce::Rectangle<int> r) {
         const auto c = r.getCentre().toFloat();
         g.setColour(juce::Colour(0xff3c3935));
-        g.fillEllipse((float) r.getX(), (float) r.getY(), (float) r.getWidth(), (float) r.getHeight());
+        g.fillEllipse((float)r.getX(), (float)r.getY(), (float)r.getWidth(), (float)r.getHeight());
         g.setColour(juce::Colour(0xff1b1917));
-        g.drawEllipse((float) r.getX(), (float) r.getY(), (float) r.getWidth(), (float) r.getHeight(), 1.2f);
-        g.drawLine(c.x - 3.5f, c.y, c.x + 3.5f, c.y, 1.0f);
-        g.drawLine(c.x, c.y - 3.5f, c.x, c.y + 3.5f, 1.0f);
+        g.drawEllipse((float)r.getX(), (float)r.getY(), (float)r.getWidth(), (float)r.getHeight(), 1.2f);
+        g.drawLine(c.x-3.5f, c.y, c.x+3.5f, c.y, 1.0f);
+        g.drawLine(c.x, c.y-3.5f, c.x, c.y+3.5f, 1.0f);
     };
-
-    drawScrew(ref(16, 13, 24, 24));
-    drawScrew(ref(1687, 13, 24, 24));
-    drawScrew(ref(16, 869, 24, 24));
-    drawScrew(ref(1687, 869, 24, 24));
+    drawScrew(ref(16,13,24,24)); drawScrew(ref(1687,13,24,24));
+    drawScrew(ref(16,869,24,24)); drawScrew(ref(1687,869,24,24));
 
     g.setColour(kDivider);
-    auto line = [&](float x1, float y1, float x2, float y2, float t = 1.0f)
-    {
-        const auto a = ref(x1, y1, 0, 0).getPosition();
-        const auto b = ref(x2, y2, 0, 0).getPosition();
-        g.drawLine((float) a.x, (float) a.y, (float) b.x, (float) b.y, t);
+    auto line = [&](float x1, float y1, float x2, float y2, float t = 1.0f) {
+        const auto a = ref(x1,y1,0,0).getPosition();
+        const auto b = ref(x2,y2,0,0).getPosition();
+        g.drawLine((float)a.x, (float)a.y, (float)b.x, (float)b.y, t);
     };
     line(42, 98, 1670, 98);
     line(42, 442, 1670, 442);
-    // No divider at x=498: OSC and MIXER are merged
-    line(806, 109, 806, 432, 0.8f);
-    line(1360, 109, 1360, 432, 0.8f);
-    line(1463, 109, 1463, 432, 0.8f);
-    line(345, 454, 345, 844, 0.8f);
+    line(806,109,806,432, 0.8f);
+    line(1360,109,1360,432, 0.8f);
+    line(1463,109,1463,432, 0.8f);
+    line(345,454,345,844, 0.8f);
 
-    auto drawTitle = [&](const juce::String& text, float x, float y, float w)
-    {
+    auto drawTitle = [&](const juce::String& text, float x, float y, float w) {
         g.setColour(kInk);
         g.setFont(juce::FontOptions(12.0f).withStyle("Bold"));
-        g.drawText(text, ref(x, y, w, 16), juce::Justification::centred, false);
+        g.drawText(text, ref(x,y,w,16), juce::Justification::centred, false);
     };
-    auto drawLabel = [&](const juce::String& text, float x, float y, float w, juce::Justification j = juce::Justification::centred)
-    {
+    auto drawLabel = [&](const juce::String& text, float x, float y, float w,
+                         juce::Justification j = juce::Justification::centred) {
         g.setColour(kInk);
         g.setFont(juce::FontOptions(9.0f).withStyle("Bold"));
-        g.drawFittedText(text, ref(x, y, w, 12), j, 1);
+        g.drawFittedText(text, ref(x,y,w,12), j, 1);
     };
-    auto drawMuted = [&](const juce::String& text, float x, float y, float w, juce::Justification j = juce::Justification::centred)
-    {
+    auto drawMuted = [&](const juce::String& text, float x, float y, float w,
+                         juce::Justification j = juce::Justification::centred) {
         g.setColour(kInk.withAlpha(0.72f));
         g.setFont(juce::FontOptions(8.0f));
-        g.drawFittedText(text, ref(x, y, w, 10), j, 1);
-    };
-    auto drawPlaceholderKnob = [&](float x, float y, float size, XTKnobStyle style = XTKnobStyle::small)
-    {
-        auto r = ref(x, y, size, size);
-        drawStaticKnob(g, r.getCentre().toFloat(), (float) juce::jmin(r.getWidth(), r.getHeight()), style);
-    };
-    auto drawPlaceholderBox = [&](float x, float y, float w, float h, const juce::String& text = {})
-    {
-        auto r = ref(x, y, w, h).toFloat();
-        g.setColour(kDarkPlate);
-        g.fillRoundedRectangle(r, 3.0f);
-        g.setColour(kDarkEdge);
-        g.drawRoundedRectangle(r, 3.0f, 1.0f);
-        if (text.isNotEmpty())
-        {
-            g.setColour(juce::Colour(0xffefe7d8));
-            g.setFont(juce::FontOptions(8.5f).withStyle("Bold"));
-            g.drawFittedText(text, r.toNearestInt(), juce::Justification::centred, 1);
-        }
+        g.drawFittedText(text, ref(x,y,w,10), j, 1);
     };
 
+    // Header
     g.setColour(kInk);
     g.setFont(juce::FontOptions(38.0f).withStyle("Bold"));
-    g.drawText("DFAF", ref(58, 25, 130, 44), juce::Justification::centredLeft, false);
+    g.drawText("DFAF", ref(58,25,130,44), juce::Justification::centredLeft, false);
     g.setColour(kAccentRed);
-    g.drawText("XT", ref(197, 25, 78, 44), juce::Justification::centredLeft, false);
+    g.drawText("XT", ref(197,25,78,44), juce::Justification::centredLeft, false);
     g.setColour(kInk.withAlpha(0.92f));
     g.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
-    g.drawText("SINGLE-VOICE PERCUSSION SYNTHESIZER", ref(63, 72, 350, 16), juce::Justification::left, false);
+    g.drawText("SINGLE-VOICE PERCUSSION SYNTHESIZER", ref(63,72,350,16), juce::Justification::left, false);
 
-    drawTitle("OSC / MIXER", 250, 113, 400);
-    drawTitle("FILTER / AMP", 866, 113, 252);
-    drawTitle("MODULATION", 1177, 113, 190);
-    drawTitle("LFO", 1522, 113, 82);
-    drawTitle("TRANSPORT", 95, 457, 138);
+    drawTitle("OSC / MIXER",   250, 113, 400);
+    drawTitle("FILTER / AMP",  866, 113, 252);
+    drawTitle("MODULATION",   1177, 113, 190);
+    drawTitle("LFO",          1522, 113, 82);
+    drawTitle("TRANSPORT",      95, 457, 138);
 
     g.setColour(kInk);
     g.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
-    g.drawText("ANALOG  -  16 STEP  -  3 MOD  -  1 LFO", ref(1458, 39, 198, 12), juce::Justification::right, false);
+    g.drawText("ANALOG  -  16 STEP  -  3 MOD  -  1 LFO",
+               ref(1458,39,198,12), juce::Justification::right, false);
     g.setFont(juce::FontOptions(8.0f));
-    g.drawText("SERIAL NO. XT-0001", ref(1548, 61, 108, 10), juce::Justification::right, false);
-    g.drawText("MADE IN SWEDEN", ref(1550, 80, 106, 10), juce::Justification::right, false);
+    g.drawText("SERIAL NO. XT-0001", ref(1548,61,108,10), juce::Justification::right, false);
+    g.drawText("MADE IN SWEDEN",     ref(1550,80,106,10), juce::Justification::right, false);
 
+    // OSC section labels
     drawLabel("VCO 1", 50, 148, 48, juce::Justification::left);
-    line(119, 158, 347, 158, 0.8f);
+    line(119,158,347,158, 0.8f);
     drawLabel("VCO 2", 50, 287, 48, juce::Justification::left);
-    line(119, 297, 347, 297, 0.8f);
-
+    line(119,297,347,297, 0.8f);
     drawLabel("HARD SYNC", 431, 160, 70);
-    // VCO 1 labels — all live
-    drawLabel("FREQ", 62, 248, 52);
-    drawLabel("EG AMT", 135, 248, 62);
-    drawLabel("WAVE", 208, 234, 58);
-    drawLabel("LEVEL", 278, 248, 52);
-    drawLabel("VCO DECAY", 351, 248, 52);
+    drawLabel("EG SHAPE",  419, 290, 70);
 
-    // VCO 2 labels — FREQ/EG AMT are live; WAVE is live combo; LEVEL+LVL have no param
-    drawLabel("FREQ", 62, 388, 52);
-    drawLabel("EG AMT", 135, 388, 62);
-    drawLabel("WAVE", 208, 374, 58);
-    drawLabel("LEVEL", 278, 388, 52);
-    drawLabel("LVL", 351, 388, 46);
-    // VCO2 LEVEL at (278,325) is now a live widget — no placeholder needed
-    drawPlaceholderKnob(351, 332, 46);     // VCO2 LVL — no param yet
+    drawLabel("FREQ",    62, 248, 52);
+    drawLabel("EG AMT",  135, 248, 62);
+    drawLabel("WAVE",    208, 234, 58);
+    drawLabel("LEVEL",   278, 248, 52);
+    drawLabel("DECAY",   351, 248, 52);
 
-    // OSC / MIXER merged section — click controls are LIVE
+    drawLabel("FREQ",    62, 388, 52);
+    drawLabel("EG AMT",  135, 388, 62);
+    drawLabel("WAVE",    208, 374, 58);
+    drawLabel("LEVEL",   278, 388, 52);
+    drawLabel("DECAY",   351, 388, 46);   // was "LVL" — now vco2Decay
+
+    // OSC / MIXER merged section
     drawLabel("CLICK TUN", 507, 218, 60);
     drawLabel("CLICK DEC", 580, 218, 60);
-    drawLabel("NOISE", 653, 218, 50);
-    // Bottom row: fmAmount is LIVE; clickLevel is LIVE
-    drawLabel("FM AMT", 507, 326, 68);
-    drawLabel("CLK LVL", 726, 326, 64);
+    drawLabel("NOISE",     653, 218, 50);
+    drawLabel("COLOR",     726, 218, 50);   // noiseColor
+    drawLabel("FM AMT",    507, 326, 68);
+    drawLabel("PTH→FM",    580, 326, 62);   // pitchFmAmt
+    drawLabel("VEL→VCF",   653, 326, 62);   // velVcfDecaySens
+    drawLabel("CLK LVL",   726, 326, 64);
     drawLabel("SIGNAL FLOW", 608, 380, 90);
     g.setColour(kDivider.withAlpha(0.6f));
-    g.drawRoundedRectangle(ref(526, 388, 249, 32).toFloat(), 3.0f, 0.8f);
+    g.drawRoundedRectangle(ref(526,388,249,32).toFloat(), 3.0f, 0.8f);
     drawMuted("VCO1 + VCO2 + NOISE + CLICK → FILTER → DRIVE → VCA → OUT", 531, 399, 238);
 
-    // FILTER / AMP — 5-column layout
-    drawLabel("MODE",         816, 134, 68);
-    // Row 1 labels
-    drawLabel("CUTOFF",       806, 250, 90);
-    drawLabel("RESONANCE",    878, 250, 92);
-    drawLabel("VCF EG AMT",   946, 250, 96);
-    drawLabel("VCF DEC",     1020, 250, 84);
-    drawLabel("PRE DRV",     1094, 250, 76);
-    // Row 2 labels
-    drawLabel("NOISE MOD",    806, 344, 84);
-    drawLabel("VCA ATCK",     878, 344, 84);
-    drawLabel("VCA DEC",      946, 344, 76);
-    drawLabel("VOLUME",      1020, 344, 84);
-    drawLabel("POST DRV",    1094, 344, 76);
+    // Filter / amp labels
+    drawLabel("MODE",       816, 134, 68);
+    drawLabel("CUTOFF",     806, 250, 90);
+    drawLabel("RESONANCE",  878, 250, 92);
+    drawLabel("VCF EG AMT", 946, 250, 96);
+    drawLabel("VCF DEC",   1020, 250, 84);
+    drawLabel("PRE DRV",   1094, 250, 76);
+    drawLabel("NOISE MOD",  806, 344, 84);
+    drawLabel("VCA ATCK",   878, 344, 84);
+    drawLabel("VCA DEC",    946, 344, 76);
+    drawLabel("VOLUME",    1020, 344, 84);
+    drawLabel("POST DRV",  1094, 344, 76);
 
+    // Modulation labels
     drawLabel("MOD A", 1173, 154, 52);
     drawLabel("MOD B", 1256, 154, 52);
     drawLabel("MOD C", 1341, 154, 52);
-    drawLabel("MODE", 1160, 183, 70);
-    drawLabel("MODE", 1244, 183, 70);
-    drawLabel("MODE", 1328, 183, 70);
-    drawLabel("DEST", 1192, 243, 42);
-    drawLabel("DEST", 1276, 243, 42);
-    drawLabel("DEST", 1360, 243, 42);
-    drawLabel("AMT", 1192, 349, 42);
-    drawLabel("AMT", 1276, 349, 42);
-    drawLabel("AMT", 1360, 349, 42);
+    drawLabel("MODE",  1160, 183, 70);
+    drawLabel("MODE",  1244, 183, 70);
+    drawLabel("MODE",  1328, 183, 70);
+    drawLabel("DEST",  1192, 243, 42);
+    drawLabel("DEST",  1276, 243, 42);
+    drawLabel("DEST",  1360, 243, 42);
+    drawLabel("AMT",   1192, 349, 42);
+    drawLabel("AMT",   1276, 349, 42);
+    drawLabel("AMT",   1360, 349, 42);
 
+    // LFO labels
     drawLabel("RATE",   1480, 241, 54);
     drawLabel("AMT",    1557, 241, 54);
     drawLabel("WAVE",   1480, 288, 70);
@@ -1083,114 +955,116 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("SYNC",   1558, 296, 46);
     drawLabel("RETRIG", 1558, 348, 46);
 
-    drawPlaceholderKnob(84, 541, 58, XTKnobStyle::transport);
-    drawPlaceholderKnob(187, 546, 52, XTKnobStyle::transport);
-    drawLabel("TEMPO", 78, 488, 56);
-    drawLabel("SWING", 182, 488, 56);
-    drawMuted("30", 71, 581, 24);
-    drawMuted("300", 154, 581, 32);
-    drawMuted("BPM", 101, 596, 32);
-    drawLabel("CLK MULT", 43, 604, 68);
+    // Transport labels
+    drawLabel("TEMPO",     78,  488, 56);
+    drawLabel("SWING",    182,  488, 56);
+    drawMuted("BPM",      101,  596, 32);
+    drawLabel("CLK MULT",  43,  604, 68);
     drawLabel("SEQ PITCH", 124, 604, 70);
-    drawPlaceholderBox(40, 679, 34, 24);
-    drawPlaceholderBox(90, 679, 34, 24);
-    drawPlaceholderBox(140, 679, 34, 24);
-    drawPlaceholderBox(190, 679, 34, 24);
     drawMuted("RUN / STOP", 36, 705, 66, juce::Justification::left);
-    drawMuted("TRIGGER", 89, 705, 50, juce::Justification::left);
-    drawMuted("ADVANCE", 137, 705, 54, juce::Justification::left);
-    drawMuted("RESET", 191, 705, 42, juce::Justification::left);
-    drawMuted("STEP COUNT", 93, 757, 78);
-    drawMuted("1 - 16", 104, 775, 56);
-    drawPlaceholderKnob(180, 725, 38);
+    drawMuted("TRIGGER",    89, 705, 50, juce::Justification::left);
+    drawMuted("ADVANCE",   137, 705, 54, juce::Justification::left);
+    drawMuted("RESET",     191, 705, 42, juce::Justification::left);
+    drawLabel("STEP COUNT", 93, 757, 78);
+    drawMuted("1 - 16",    104, 775, 56);
 
+    // Sequencer labels
     drawLabel("SEQUENCER", 495, 454, 98, juce::Justification::left);
-    drawMuted("16 STEPS  -  PITCH  -  VELOCITY  -  MOD A  -  MOD B  -  MOD C", 602, 456, 360, juce::Justification::left);
+    drawMuted("16 STEPS  -  PITCH  -  VELOCITY  -  MOD A  -  MOD B  -  MOD C",
+              602, 456, 360, juce::Justification::left);
     drawMuted("PLAYHEAD", 407, 492, 64, juce::Justification::left);
-    line(404, 509, 1650, 509, 0.8f);
+    line(404,509,1650,509, 0.8f);
 
-    drawMutedLabel(g, { presetBox.getX() - 54, presetBox.getY() + 5, 46, 10 }, "PRESET",
-                   juce::Justification::centredRight);
+    drawMutedLabel(g, { presetBox.getX() - 54, presetBox.getY() + 5, 46, 10 },
+                   "PRESET", juce::Justification::centredRight);
 
+    // Step counter display
     const auto stepDisplayBounds = ref(74.0f, 754.0f, 196.0f, 78.0f);
-    const auto stepDisplay = juce::String::formatted("%02d/16", juce::jlimit(1, XTSequencer::numSteps,
-        currentLedStep >= 0 ? currentLedStep + 1 : 1));
+    const auto stepDisplay = juce::String::formatted("%02d/16",
+        juce::jlimit(1, XTSequencer::numSteps, currentLedStep >= 0 ? currentLedStep + 1 : 1));
 
     g.setColour(kDarkPlate);
     g.fillRoundedRectangle(stepDisplayBounds.toFloat(), 4.0f);
     g.setColour(juce::Colour(0xffefe7d8));
     g.setFont(juce::FontOptions(10.0f).withStyle("Bold"));
-    g.drawText("STEP", stepDisplayBounds.getX() + 16, stepDisplayBounds.getY() + 10, 48, 12, juce::Justification::left);
+    g.drawText("STEP", stepDisplayBounds.getX() + 16, stepDisplayBounds.getY() + 10, 48, 12,
+               juce::Justification::left);
     g.setColour(juce::Colour(0xffdf5b31));
     g.setFont(juce::FontOptions(32.0f).withStyle("Bold"));
-    g.drawText(stepDisplay, stepDisplayBounds.getX() + 18, stepDisplayBounds.getY() + 28,
+    g.drawText(stepDisplay,
+               stepDisplayBounds.getX() + 18, stepDisplayBounds.getY() + 28,
                stepDisplayBounds.getWidth() - 36, 32, juce::Justification::centred);
 
+    // Step LEDs and step numbers
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
         const auto knobBounds = stepPitch[i].getBounds().toFloat();
-        const float centreX = knobBounds.getCentreX();
-        const float padY = knobBounds.getY() - 39.0f;
-        const float ledY = knobBounds.getY() - 9.0f;
-        const bool active = (i == currentLedStep);
+        const float centreX  = knobBounds.getCentreX();
+        const float padY     = knobBounds.getY() - 39.0f;
+        const float ledY     = knobBounds.getY() - 9.0f;
+        const bool  active   = (i == currentLedStep);
 
         g.setColour(kInk);
         g.setFont(juce::FontOptions(9.0f).withStyle("Bold"));
-        g.drawText(juce::String(i + 1), juce::Rectangle<float>(centreX - 12.0f, padY - 18.0f, 24.0f, 10.0f),
+        g.drawText(juce::String(i + 1),
+                   juce::Rectangle<float>(centreX - 12.0f, padY - 18.0f, 24.0f, 10.0f),
                    juce::Justification::centred, false);
 
-        // Static pad rect removed — stepActiveButton[i] widget IS the pad now
         g.setColour(kPanelBase);
         g.fillEllipse(centreX - 7.0f, ledY - 7.0f, 14.0f, 14.0f);
-
-        if (active)
-        {
+        if (active) {
             g.setColour(juce::Colour(0x22ff3a20));
             g.fillEllipse(centreX - 10.0f, ledY - 10.0f, 20.0f, 20.0f);
         }
-
-        juce::ColourGradient ledGrad(active ? juce::Colour(0xffff5a34) : juce::Colour(0xff5b3326),
-                                     centreX - 3.0f, ledY - 3.0f,
-                                     active ? juce::Colour(0xff9b2014) : juce::Colour(0xff231512),
-                                     centreX + 3.0f, ledY + 3.0f,
-                                     true);
+        juce::ColourGradient ledGrad(
+            active ? juce::Colour(0xffff5a34) : juce::Colour(0xff5b3326), centreX-3.0f, ledY-3.0f,
+            active ? juce::Colour(0xff9b2014) : juce::Colour(0xff231512), centreX+3.0f, ledY+3.0f, true);
         g.setGradientFill(ledGrad);
         g.fillEllipse(centreX - 4.5f, ledY - 4.5f, 9.0f, 9.0f);
         g.setColour(active ? juce::Colour(0xff7f1d15) : juce::Colour(0xff181818));
         g.drawEllipse(centreX - 4.5f, ledY - 4.5f, 9.0f, 9.0f, 1.0f);
     }
 
+    // Sequencer lane labels
     for (int row = 0; row < XTSequencer::numLaneRows; ++row)
     {
-        juce::String subtitle = row == 0 ? "semitones" : row == 1 ? "accent" : getModLaneSubtitle(row - 2).toLowerCase();
-        if (subtitle.isEmpty())
-            subtitle = "assign";
+        juce::String subtitle = row == 0 ? "semitones"
+                              : row == 1 ? "accent"
+                              : getModLaneSubtitle(row - 2).toLowerCase();
+        if (subtitle.isEmpty()) subtitle = "assign";
 
         const auto first = stepPitch[0].getBounds().translated(0, row * 39);
-        auto plate = juce::Rectangle<float>((float) first.getX() - 120.0f, (float) first.getY() - 3.0f, 62.0f, 40.0f);
+        auto plate = juce::Rectangle<float>((float)first.getX() - 120.0f, (float)first.getY() - 3.0f,
+                                            62.0f, 40.0f);
         g.setColour(kDarkPlate);
         g.fillRoundedRectangle(plate, 3.0f);
         g.setColour(kDarkEdge);
         g.drawRoundedRectangle(plate, 3.0f, 1.0f);
         g.setColour(juce::Colour(0xffefe7d8));
         g.setFont(juce::FontOptions(10.5f).withStyle("Bold"));
-        g.drawText(kSequencerLaneNames[(size_t) row], juce::Rectangle<int>((int) plate.getX() + 10, (int) plate.getY() + 7, (int) plate.getWidth() - 20, 12),
+        g.drawText(kSequencerLaneNames[(size_t)row],
+                   juce::Rectangle<int>((int)plate.getX()+10, (int)plate.getY()+7, (int)plate.getWidth()-20, 12),
                    juce::Justification::left, false);
         g.setFont(juce::FontOptions(8.0f));
-        g.drawText(subtitle, juce::Rectangle<int>((int) plate.getX() + 10, (int) plate.getY() + 21, (int) plate.getWidth() - 20, 10),
+        g.drawText(subtitle,
+                   juce::Rectangle<int>((int)plate.getX()+10, (int)plate.getY()+21, (int)plate.getWidth()-20, 10),
                    juce::Justification::left, false);
     }
 }
 
+// =============================================================================
+// resized()
+// =============================================================================
+
 void XTEditor::resized()
 {
     const auto layout = createLayout(getWidth(), getHeight());
-    const float uiScale = juce::jmin((float) getWidth() / 1720.0f, (float) getHeight() / 900.0f);
-    auto ref = [&](float x, float y, float w, float h)
-    {
+    const float uiScale = juce::jmin((float)getWidth() / 1720.0f, (float)getHeight() / 900.0f);
+    auto ref = [&](float x, float y, float w, float h) {
         return mapReferenceRect(layout.panel, x, y, w, h);
     };
 
+    // Preset controls
     auto presetArea = layout.presetControls.reduced(0, 1);
     presetArea.removeFromTop(2);
     presetArea.removeFromRight(juce::roundToInt(150.0f * uiScale));
@@ -1203,90 +1077,95 @@ void XTEditor::resized()
     presetArea.removeFromLeft(6);
     presetInitButton.setBounds(presetArea.removeFromLeft(juce::roundToInt(38.0f * uiScale)).withHeight(juce::roundToInt(22.0f * uiScale)));
 
-    // --- OSCILLATORS ---
-    // VCO 1 — all slots live
-    vco1Frequency.setBounds(ref(62.0f, 185.0f, 50.0f, 50.0f));
-    vco1EgAmount.setBounds(ref(135.0f, 185.0f, 50.0f, 50.0f));
-    vco1WaveBox.setBounds(ref(205.0f, 199.0f, 58.0f, 24.0f));
-    vco1Level.setBounds(ref(278.0f, 192.0f, 50.0f, 50.0f));
-    vcoDecay.setBounds(ref(351.0f, 185.0f, 50.0f, 50.0f));
+    // --- OSC ---
+    vco1Frequency.setBounds(ref(62.0f,  185.0f, 50.0f, 50.0f));
+    vco1EgAmount.setBounds( ref(135.0f, 185.0f, 50.0f, 50.0f));
+    vco1WaveBox.setBounds(  ref(205.0f, 199.0f, 58.0f, 24.0f));
+    vco1Level.setBounds(    ref(278.0f, 192.0f, 50.0f, 50.0f));
+    vcoDecay.setBounds(     ref(351.0f, 185.0f, 50.0f, 50.0f));
 
-    // HARD SYNC toggle
-    hardSyncBox.setBounds(ref(419.0f, 178.0f, 62.0f, 56.0f));
+    hardSyncBox.setBounds(  ref(419.0f, 178.0f, 62.0f, 56.0f));
+    vcoEgShapeBox.setBounds(ref(419.0f, 264.0f, 62.0f, 24.0f));
 
-    // VCO 2 — LEVEL slot now live (vco2Level), LVL slot still placeholder
-    vco2Frequency.setBounds(ref(62.0f, 325.0f, 50.0f, 50.0f));
-    vco2EgAmount.setBounds(ref(135.0f, 325.0f, 50.0f, 50.0f));
-    vco2WaveBox.setBounds(ref(205.0f, 339.0f, 58.0f, 24.0f));
-    vco2Level.setBounds(ref(278.0f, 325.0f, 50.0f, 50.0f));
+    vco2Frequency.setBounds(ref(62.0f,  325.0f, 50.0f, 50.0f));
+    vco2EgAmount.setBounds( ref(135.0f, 325.0f, 50.0f, 50.0f));
+    vco2WaveBox.setBounds(  ref(205.0f, 339.0f, 58.0f, 24.0f));
+    vco2Level.setBounds(    ref(278.0f, 325.0f, 50.0f, 50.0f));
+    vco2Decay.setBounds(    ref(351.0f, 325.0f, 50.0f, 50.0f));   // was placeholder
 
-    // --- OSC / MIXER (merged) ---
-    // Click controls
-    clickTune.setBounds(ref(507.0f, 166.0f, 50.0f, 50.0f));
-    clickDecay.setBounds(ref(580.0f, 166.0f, 50.0f, 50.0f));
-    noiseLevel.setBounds(ref(653.0f, 166.0f, 50.0f, 50.0f));
-    clickLevel.setBounds(ref(726.0f, 272.0f, 50.0f, 50.0f));
-    // Bottom row: FM AMT live
-    fmAmount.setBounds(ref(507.0f, 272.0f, 50.0f, 50.0f));
+    // --- OSC / MIXER (click + noise) ---
+    clickTune.setBounds(    ref(507.0f, 166.0f, 50.0f, 50.0f));
+    clickDecay.setBounds(   ref(580.0f, 166.0f, 50.0f, 50.0f));
+    noiseLevel.setBounds(   ref(653.0f, 166.0f, 50.0f, 50.0f));
+    noiseColor.setBounds(   ref(726.0f, 166.0f, 50.0f, 50.0f));   // new
+    fmAmount.setBounds(     ref(507.0f, 272.0f, 50.0f, 50.0f));
+    pitchFmAmt.setBounds(   ref(580.0f, 272.0f, 50.0f, 50.0f));   // new
+    velVcfDecaySens.setBounds(ref(653.0f, 272.0f, 50.0f, 50.0f)); // new
+    clickLevel.setBounds(   ref(726.0f, 272.0f, 50.0f, 50.0f));
 
-    // --- FILTER / AMP / DRIVE ---
-    vcfModeBox.setBounds(ref(820.0f, 143.0f, 64.0f, 26.0f));
-    // Row 1: cutoff, resonance, vcfEgAmt, vcfDecay, preDrive
-    cutoff.setBounds(ref(820.0f, 178.0f, 62.0f, 62.0f));
-    resonance.setBounds(ref(892.0f, 178.0f, 62.0f, 62.0f));
+    // --- FILTER / AMP ---
+    vcfModeBox.setBounds( ref(820.0f, 143.0f, 64.0f, 26.0f));
+    cutoff.setBounds(     ref(820.0f, 178.0f, 62.0f, 62.0f));
+    resonance.setBounds(  ref(892.0f, 178.0f, 62.0f, 62.0f));
     vcfEgAmount.setBounds(ref(964.0f, 178.0f, 62.0f, 62.0f));
-    vcfDecay.setBounds(ref(1036.0f, 178.0f, 62.0f, 62.0f));
-    preDrive.setBounds(ref(1108.0f, 178.0f, 62.0f, 62.0f));
-    // Row 2: noiseVcfMod, vcaAttack, vcaDecay, volume, postDrive
+    vcfDecay.setBounds(   ref(1036.0f,178.0f, 62.0f, 62.0f));
+    preDrive.setBounds(   ref(1108.0f,178.0f, 62.0f, 62.0f));
     noiseVcfMod.setBounds(ref(820.0f, 272.0f, 62.0f, 62.0f));
-    vcaAttack.setBounds(ref(892.0f, 272.0f, 62.0f, 62.0f));
-    vcaDecay.setBounds(ref(964.0f, 272.0f, 62.0f, 62.0f));
-    volume.setBounds(ref(1036.0f, 272.0f, 62.0f, 62.0f));
-    postDrive.setBounds(ref(1108.0f, 272.0f, 62.0f, 62.0f));
+    vcaAttack.setBounds(  ref(892.0f, 272.0f, 62.0f, 62.0f));
+    vcaDecay.setBounds(   ref(964.0f, 272.0f, 62.0f, 62.0f));
+    volume.setBounds(     ref(1036.0f,272.0f, 62.0f, 62.0f));
+    postDrive.setBounds(  ref(1108.0f,272.0f, 62.0f, 62.0f));
     vcaEg.setVisible(false);
 
     // --- MODULATION ---
-    modModeBox[0].setBounds(ref(1160.0f, 195.0f, 70.0f, 26.0f));
-    modModeBox[1].setBounds(ref(1244.0f, 195.0f, 70.0f, 26.0f));
-    modModeBox[2].setBounds(ref(1328.0f, 195.0f, 70.0f, 26.0f));
-    modDestBox[0].setBounds(ref(1160.0f, 245.0f, 70.0f, 26.0f));
-    modDestBox[1].setBounds(ref(1244.0f, 245.0f, 70.0f, 26.0f));
-    modDestBox[2].setBounds(ref(1328.0f, 245.0f, 70.0f, 26.0f));
-    modAmount[0].setBounds(ref(1173.0f, 328.0f, 54.0f, 54.0f));
-    modAmount[1].setBounds(ref(1257.0f, 328.0f, 54.0f, 54.0f));
-    modAmount[2].setBounds(ref(1341.0f, 328.0f, 54.0f, 54.0f));
+    for (int i = 0; i < 3; ++i)
+    {
+        const float bx = 1160.0f + (float)i * 84.0f;
+        modModeBox[i].setBounds( ref(bx,        195.0f, 70.0f, 26.0f));
+        modDestBox[i].setBounds( ref(bx,        245.0f, 70.0f, 26.0f));
+        modAmount[i].setBounds(  ref(bx + 13.0f,328.0f, 54.0f, 54.0f));
+    }
 
     // --- LFO ---
-    lfoRate.setBounds(ref(1480.0f, 178.0f, 54.0f, 54.0f));
-    lfoAmt.setBounds(ref(1557.0f, 178.0f, 54.0f, 54.0f));
-    lfoWaveBox.setBounds(ref(1480.0f, 253.0f, 70.0f, 26.0f));
-    lfoDstBox.setBounds(ref(1480.0f, 298.0f, 70.0f, 26.0f));
-    lfoSyncBox.setBounds(ref(1558.0f, 248.0f, 46.0f, 40.0f));
-    lfoRetrigBox.setBounds(ref(1558.0f, 300.0f, 46.0f, 40.0f));
+    lfoRate.setBounds(    ref(1480.0f, 178.0f, 54.0f, 54.0f));
+    lfoAmt.setBounds(     ref(1557.0f, 178.0f, 54.0f, 54.0f));
+    lfoWaveBox.setBounds( ref(1480.0f, 253.0f, 70.0f, 26.0f));
+    lfoDstBox.setBounds(  ref(1480.0f, 298.0f, 70.0f, 26.0f));
+    lfoSyncBox.setBounds( ref(1558.0f, 248.0f, 46.0f, 40.0f));
+    lfoRetrigBox.setBounds(ref(1558.0f,300.0f, 46.0f, 40.0f));
 
     // --- TRANSPORT ---
-    clockMultBox.setBounds(ref(43.0f, 618.0f, 68.0f, 24.0f));
-    seqPitchModBox.setBounds(ref(124.0f, 618.0f, 70.0f, 24.0f));
-    resetButton.setBounds(ref(191.0f, 679.0f, 34.0f, 24.0f));
+    tempoSlider.setBounds(  ref(60.0f,  510.0f, 58.0f, 58.0f));   // was placeholder
+    swingSlider.setBounds(  ref(168.0f, 515.0f, 52.0f, 52.0f));   // was placeholder
+    clockMultBox.setBounds( ref(43.0f,  618.0f, 68.0f, 24.0f));
+    seqPitchModBox.setBounds(ref(124.0f,618.0f, 70.0f, 24.0f));
 
-    const float stepLeft = 525.0f;
-    const float stepStride = 74.7f;
-    const float stepKnobTop = 620.0f;
+    // Transport LED buttons — RUN/STOP, TRIGGER, ADVANCE (replace drawPlaceholderBox)
+    runStopButton.setBounds( ref(40.0f,  651.0f, 34.0f, 24.0f));
+    triggerButton.setBounds( ref(90.0f,  651.0f, 34.0f, 24.0f));
+    advanceButton.setBounds( ref(140.0f, 651.0f, 34.0f, 24.0f));
+    resetButton.setBounds(   ref(191.0f, 651.0f, 34.0f, 24.0f));
+
+    stepCountSlider.setBounds(ref(164.0f, 725.0f, 38.0f, 38.0f));  // was placeholder
+
+    // --- SEQUENCER ---
+    const float stepLeft     = 525.0f;
+    const float stepStride   = 74.7f;
+    const float stepKnobTop  = 620.0f;
     const float stepKnobSize = 40.0f;
-    const float stepRowStride = 52.0f;
+    const float stepRowStride= 52.0f;
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
-        const float x = stepLeft + (float) i * stepStride;
-        stepPitch[i].setBounds(ref(x, stepKnobTop, stepKnobSize, stepKnobSize));
-        stepVelocity[i].setBounds(ref(x, stepKnobTop + stepRowStride, stepKnobSize, stepKnobSize));
-        stepModA[i].setBounds(ref(x, stepKnobTop + stepRowStride * 2.0f, stepKnobSize, stepKnobSize));
-        stepModB[i].setBounds(ref(x, stepKnobTop + stepRowStride * 3.0f, stepKnobSize, stepKnobSize));
-        stepModC[i].setBounds(ref(x, stepKnobTop + stepRowStride * 4.0f, stepKnobSize, stepKnobSize));
+        const float x = stepLeft + (float)i * stepStride;
+        stepPitch[i].setBounds(   ref(x, stepKnobTop,                    stepKnobSize, stepKnobSize));
+        stepVelocity[i].setBounds(ref(x, stepKnobTop + stepRowStride,     stepKnobSize, stepKnobSize));
+        stepModA[i].setBounds(    ref(x, stepKnobTop + stepRowStride*2.f, stepKnobSize, stepKnobSize));
+        stepModB[i].setBounds(    ref(x, stepKnobTop + stepRowStride*3.f, stepKnobSize, stepKnobSize));
+        stepModC[i].setBounds(    ref(x, stepKnobTop + stepRowStride*4.f, stepKnobSize, stepKnobSize));
 
-        // Step active button: above the pitch knob
         auto pitchBounds = ref(x, stepKnobTop, stepKnobSize, stepKnobSize);
-        const int cx = pitchBounds.getCentreX();
+        const int cx     = pitchBounds.getCentreX();
         const int padTop = pitchBounds.getY() - 39;
         stepActiveButton[i].setBounds(cx - 12, padTop, 24, 24);
     }
