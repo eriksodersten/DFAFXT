@@ -501,7 +501,11 @@ XTEditor::XTEditor(XTProcessor& p)
 
     // Click / mix
     addKnob(clickTune);  addKnob(clickDecay);  addKnob(clickLevel);
-    addKnob(noiseColor); addKnob(pitchFmAmt);  addKnob(velVcfDecaySens);
+    addKnob(noiseColor); addKnob(noiseDecay);  addKnob(pitchFmAmt);  addKnob(velVcfDecaySens);
+    noiseVcfBypassButton.setClickingTogglesState(true);
+    clickVcfBypassButton.setClickingTogglesState(true);
+    addAndMakeVisible(noiseVcfBypassButton);
+    addAndMakeVisible(clickVcfBypassButton);
 
     // Filter / amp
     addKnob(cutoff);     addKnob(resonance);   addKnob(vcfDecay);
@@ -605,6 +609,9 @@ XTEditor::XTEditor(XTProcessor& p)
     preDriveAtt       = std::make_unique<SliderAttachment>(apvts, "preDrive",    preDrive);
     postDriveAtt      = std::make_unique<SliderAttachment>(apvts, "postDrive",   postDrive);
     noiseColorAtt     = std::make_unique<SliderAttachment>(apvts, "noiseColor",  noiseColor);
+    noiseDecayAtt     = std::make_unique<SliderAttachment>(apvts, "noiseDecay",  noiseDecay);
+    noiseVcfBypassAtt = std::make_unique<ButtonAttachment>(apvts, "noiseVcfBypass", noiseVcfBypassButton);
+    clickVcfBypassAtt = std::make_unique<ButtonAttachment>(apvts, "clickVcfBypass", clickVcfBypassButton);
     pitchFmAmtAtt     = std::make_unique<SliderAttachment>(apvts, "pitchFmAmt",  pitchFmAmt);
     velVcfDecaySensAtt= std::make_unique<SliderAttachment>(apvts, "velVcfDecaySens", velVcfDecaySens);
     lfoRateAtt        = std::make_unique<SliderAttachment>(apvts, "lfoRate",     lfoRate);
@@ -903,10 +910,13 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("CLICK DEC", 580, 218, 60);
     drawLabel("NOISE",     653, 218, 50);
     drawLabel("COLOR",     726, 218, 50);   // noiseColor
+    drawLabel("N.DECAY",   799, 218, 50);
     drawLabel("FM AMT",    507, 326, 68);
     drawLabel("PTH→FM",    580, 326, 62);   // pitchFmAmt
     drawLabel("VEL→VCF",   653, 326, 62);   // velVcfDecaySens
     drawLabel("CLK LVL",   726, 326, 64);
+    drawLabel("N.BYPASS",  799, 299, 60);
+    drawLabel("C.BYPASS",  799, 343, 60);
     drawLabel("SIGNAL FLOW", 608, 380, 90);
     g.setColour(kDivider.withAlpha(0.6f));
     g.drawRoundedRectangle(ref(526,388,249,32).toFloat(), 3.0f, 0.8f);
@@ -1086,7 +1096,10 @@ void XTEditor::resized()
     clickTune.setBounds(    ref(507.0f, 166.0f, 50.0f, 50.0f));
     clickDecay.setBounds(   ref(580.0f, 166.0f, 50.0f, 50.0f));
     noiseLevel.setBounds(   ref(653.0f, 166.0f, 50.0f, 50.0f));
-    noiseColor.setBounds(   ref(726.0f, 166.0f, 50.0f, 50.0f));   // new
+    noiseColor.setBounds(   ref(726.0f, 166.0f, 50.0f, 50.0f));
+    noiseDecay.setBounds(   ref(799.0f, 166.0f, 50.0f, 50.0f));
+    noiseVcfBypassButton.setBounds(ref(790.0f, 272.0f, 54.0f, 24.0f));
+    clickVcfBypassButton.setBounds(ref(790.0f, 316.0f, 54.0f, 24.0f));
     fmAmount.setBounds(     ref(507.0f, 272.0f, 50.0f, 50.0f));
     pitchFmAmt.setBounds(   ref(580.0f, 272.0f, 50.0f, 50.0f));   // new
     velVcfDecaySens.setBounds(ref(653.0f, 272.0f, 50.0f, 50.0f)); // new

@@ -118,7 +118,7 @@ private:
     std::unique_ptr<juce::XmlElement> createStateXml();
     void restoreStateFromXml(const juce::XmlElement& xml, const juce::String& presetNameOverride);
 
-    static constexpr size_t kNumMidiCcBindings = 142;
+    static constexpr size_t kNumMidiCcBindings = 145;
     void initialiseMidiCcBindings();
     void applyMidiCc(int ccNumber, int ccValue);
 

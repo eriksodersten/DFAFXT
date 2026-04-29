@@ -15,6 +15,7 @@ public:
         vco2Envelope.prepare(sampleRate);
         vcaEnvelope.prepare(sampleRate);
         vcfEnvelope.prepare(sampleRate);
+        noiseEnvelope.prepare(sampleRate);
 
         smoothedVcoEnv.reset(sampleRate, 0.001);
         smoothedVco2Env.reset(sampleRate, 0.001);
@@ -67,7 +68,10 @@ public:
     void setClickDecay(float s)           { clickDecaySeconds = s; }
     void setClickLevel(float lev)         { clickLevelVal = lev; }
     void setVcoEgShape(int shape)         { vcoEgShape = shape; }
-    void setNoiseColor(float color)       { noiseColor = color; }
+    void setNoiseColor(float color)        { noiseColor = color; }
+    void setNoiseDecayTime(float seconds)  { noiseEnvelope.setDecayTime(seconds); }
+    void setNoiseBypassVcf(bool bypass)    { noiseBypassVcf = bypass; }
+    void setClickBypassVcf(bool bypass)    { clickBypassVcf = bypass; }
     void setVelVcfDecaySens(float s)      { velVcfDecaySens = juce::jlimit(0.0f, 0.98f, s); }
 
     float getVcfEnvValue() const { return lastVcfEnv; }
@@ -80,6 +84,8 @@ public:
         float noiseRaw = 0.0f;
         float vco1Raw  = 0.0f;
         float vco2Raw  = 0.0f;
+        float noiseOut = 0.0f; // non-zero when noise bypasses VCF
+        float clickOut = 0.0f; // non-zero when click bypasses VCF
     };
 
     Frame processFrame()
@@ -199,10 +205,12 @@ public:
                 coloredNoise = rawNoise;
             }
 
-            float toneAmp = vcoEnv;
-            float tone    = readOscillatorDecimatorOutput();
-            f.raw     = tone * toneAmp + coloredNoise * noiseLevel;
+            float toneAmp   = vcoEnv;
+            float tone      = readOscillatorDecimatorOutput();
+            float noiseEnv  = noiseEnvelope.process();
+            float noiseSignal = coloredNoise * noiseLevel * noiseEnv;
 
+            float clickSignal = 0.0f;
             if (clickActive && clickLevelVal > 0.0f)
             {
                 clickEnvPhase += 1.0f / ((float)sr * juce::jmax(0.001f, clickDecaySeconds));
@@ -211,8 +219,15 @@ public:
                 float cn  = random.nextFloat() * 2.0f - 1.0f;
                 const float alpha = juce::jlimit(0.0f, 0.99f, clickFreqHz / (float)sr * juce::MathConstants<float>::twoPi);
                 clickFilt += (cn - clickFilt) * alpha;
-                f.raw += clickFilt * clickLevelVal * env * vel * 2.0f;  // vel-scaled click
+                clickSignal = clickFilt * clickLevelVal * env * vel * 2.0f;
             }
+
+            // Signals that bypass VCF are returned separately; others mix into raw
+            f.noiseOut = noiseBypassVcf ? noiseSignal : 0.0f;
+            f.clickOut = clickBypassVcf ? clickSignal : 0.0f;
+            f.raw = tone * toneAmp
+                  + (noiseBypassVcf ? 0.0f : noiseSignal)
+                  + (clickBypassVcf ? 0.0f : clickSignal);
 
             f.vcfEnv   = lastVcfEnv * vel;
             f.noiseRaw = rawNoise;
@@ -268,6 +283,7 @@ public:
             vco2Envelope.trigger();
             setVcfDecayTime(vcfDecaySeconds);
             vcfEnvelope.trigger();
+            noiseEnvelope.trigger();
             vcaAttack.reset((float)sr, vcaAttackSeconds);
             vcaAttack.setCurrentAndTargetValue(0.0f);
             vcaAttack.setTargetValue(1.0f);
@@ -412,6 +428,8 @@ private:
     int   vcoEgShape        = 1;    // 0=EXP 1=LIN 2=LOG
     float noiseColor        = 0.0f;
     float noiseColorState   = 0.0f;
+    bool  noiseBypassVcf    = false;
+    bool  clickBypassVcf    = false;
     float velVcfDecaySens   = 0.5f;
     std::array<float, 6> metalPhases {};
     float smoothedAmp      = 0.0f;
@@ -421,6 +439,7 @@ private:
     DecayEnvelope vco2Envelope;
     DecayEnvelope vcaEnvelope;
     DecayEnvelope vcfEnvelope;
+    DecayEnvelope noiseEnvelope;
     juce::Random  random;
     juce::SmoothedValue<float> smoothedVcoEnv;
     juce::SmoothedValue<float> smoothedVco2Env;

@@ -171,6 +171,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     noiseDecayRange.setSkewForCentre(0.40f);
     params.push_back(std::make_unique<juce::AudioParameterFloat>("noiseDecay", "Noise Decay", noiseDecayRange, 0.3f));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>("noiseVcfBypass", "Noise Bypass VCF", false));
+    params.push_back(std::make_unique<juce::AudioParameterBool>("clickVcfBypass", "Click Bypass VCF", false));
+
     return { params.begin(), params.end() };
 }
 
@@ -390,6 +393,8 @@ void XTProcessor::initialiseMidiCcBindings()
     add(cc++, "pitchFmAmt");       add(cc++, "tempo");
     add(cc++, "swing");            add(cc++, "stepCount");
     add(cc++, "noiseDecay");
+    add(cc++, "noiseVcfBypass");
+    add(cc++, "clickVcfBypass");
 
     jassert(idx == midiCcBindings.size());
 }
@@ -536,6 +541,8 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         (int)apvts.getRawParameterValue("lfoDest")->load());
     float noiseColorVal     = apvts.getRawParameterValue("noiseColor")->load();
     float noiseDecayVal     = apvts.getRawParameterValue("noiseDecay")->load();
+    bool  noiseVcfBypass    = apvts.getRawParameterValue("noiseVcfBypass")->load() > 0.5f;
+    bool  clickVcfBypass    = apvts.getRawParameterValue("clickVcfBypass")->load() > 0.5f;
     float velVcfDecaySensVal= apvts.getRawParameterValue("velVcfDecaySens")->load();
     float pitchFmAmtVal     = apvts.getRawParameterValue("pitchFmAmt")->load();
     int   vcoEgShapeVal     = (int)apvts.getRawParameterValue("vcoEgShape")->load();
@@ -571,6 +578,8 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     voice.setVcoEgShape(vcoEgShapeVal);
     voice.setNoiseColor(noiseColorVal);
     voice.setNoiseDecayTime(noiseDecayVal);
+    voice.setNoiseBypassVcf(noiseVcfBypass);
+    voice.setClickBypassVcf(clickVcfBypass);
     voice.setVelVcfDecaySens(velVcfDecaySensVal);
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
@@ -765,7 +774,9 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
             ? std::tanh(frame.raw * preGain) / std::tanh(preGain)
             : frame.raw * preGain;
         float filtered  = filter.process(preDriven);
-        float postInput = filtered * frame.ampGain * volumeNow;
+        // Bypass paths join here — skip VCF but still go through VCA + volume
+        float combined  = filtered + frame.noiseOut + frame.clickOut;
+        float postInput = combined * frame.ampGain * volumeNow;
         float sample    = postDriveNow > 1.01f
             ? std::tanh(postInput * postDriveNow) / std::tanh(postDriveNow)
             : postInput;
