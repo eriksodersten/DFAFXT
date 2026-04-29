@@ -15,7 +15,7 @@ class XTSequencer
 {
 public:
     static constexpr int numSteps    = 16;
-    static constexpr int numLaneRows = 5;
+    static constexpr int numLaneRows = 4;
 
     XTSequencer()
     {
