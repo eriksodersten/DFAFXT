@@ -120,6 +120,7 @@ private:
     XTSlider clickDecay { XTKnobStyle::small };
     XTSlider clickLevel { XTKnobStyle::small };
     XTSlider noiseColor { XTKnobStyle::small };   // noise LP coloring
+    XTSlider noiseDecay { XTKnobStyle::small };
 
     // Pitch→FM and vel→VCF coupling
     XTSlider pitchFmAmt      { XTKnobStyle::small };
@@ -199,6 +200,7 @@ private:
     std::unique_ptr<SliderAttachment> clickTuneAtt, clickDecayAtt, clickLevelAtt;
     std::unique_ptr<SliderAttachment> vcaAttackAtt, preDriveAtt, postDriveAtt;
     std::unique_ptr<SliderAttachment> noiseColorAtt, pitchFmAmtAtt, velVcfDecaySensAtt;
+    std::unique_ptr<SliderAttachment> noiseDecayAtt;
     std::unique_ptr<SliderAttachment> lfoRateAtt, lfoAmtAtt;
     std::unique_ptr<SliderAttachment> tempoAtt, swingAtt, stepCountAtt;
     std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps];

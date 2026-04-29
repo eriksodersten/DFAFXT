@@ -15,6 +15,7 @@ public:
         vco2Envelope.prepare(sampleRate);
         vcaEnvelope.prepare(sampleRate);
         vcfEnvelope.prepare(sampleRate);
+        noiseEnvelope.prepare(sampleRate);
 
         smoothedVcoEnv.reset(sampleRate, 0.001);
         smoothedVco2Env.reset(sampleRate, 0.001);
@@ -67,7 +68,8 @@ public:
     void setClickDecay(float s)           { clickDecaySeconds = s; }
     void setClickLevel(float lev)         { clickLevelVal = lev; }
     void setVcoEgShape(int shape)         { vcoEgShape = shape; }
-    void setNoiseColor(float color)       { noiseColor = color; }
+    void setNoiseColor(float color)        { noiseColor = color; }
+    void setNoiseDecayTime(float seconds)  { noiseEnvelope.setDecayTime(seconds); }
     void setVelVcfDecaySens(float s)      { velVcfDecaySens = juce::jlimit(0.0f, 0.98f, s); }
 
     float getVcfEnvValue() const { return lastVcfEnv; }
@@ -199,9 +201,10 @@ public:
                 coloredNoise = rawNoise;
             }
 
-            float toneAmp = vcoEnv;
-            float tone    = readOscillatorDecimatorOutput();
-            f.raw     = tone * toneAmp + coloredNoise * noiseLevel;
+            float toneAmp  = vcoEnv;
+            float tone     = readOscillatorDecimatorOutput();
+            float noiseEnv = noiseEnvelope.process();
+            f.raw = tone * toneAmp + coloredNoise * noiseLevel * noiseEnv;
 
             if (clickActive && clickLevelVal > 0.0f)
             {
@@ -268,6 +271,7 @@ public:
             vco2Envelope.trigger();
             setVcfDecayTime(vcfDecaySeconds);
             vcfEnvelope.trigger();
+            noiseEnvelope.trigger();
             vcaAttack.reset((float)sr, vcaAttackSeconds);
             vcaAttack.setCurrentAndTargetValue(0.0f);
             vcaAttack.setTargetValue(1.0f);
@@ -421,6 +425,7 @@ private:
     DecayEnvelope vco2Envelope;
     DecayEnvelope vcaEnvelope;
     DecayEnvelope vcfEnvelope;
+    DecayEnvelope noiseEnvelope;
     juce::Random  random;
     juce::SmoothedValue<float> smoothedVcoEnv;
     juce::SmoothedValue<float> smoothedVco2Env;
