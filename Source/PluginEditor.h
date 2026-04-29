@@ -162,6 +162,13 @@ private:
     XTTextButton advanceButton  { "ADV",     XTButtonStyle::led };
     XTTextButton resetButton    { "RST",     XTButtonStyle::square };
 
+    // Pattern pages
+    XTTextButton pageAButton    { "PAT A",   XTButtonStyle::led };
+    XTTextButton pageBButton    { "PAT B",   XTButtonStyle::led };
+    XTTextButton copyPageButton { "A→B", XTButtonStyle::utility };
+    int editPage = 0;
+    void switchEditPage(int page);
+
     // Sequencer combos
     XTComboBox seqPitchModBox { XTComboStyle::led };
     XTComboBox hardSyncBox    { XTComboStyle::toggle };

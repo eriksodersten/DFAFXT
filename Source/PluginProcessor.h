@@ -67,6 +67,8 @@ public:
 
     int getCurrentStep() const { return sequencer.getCurrentStep(); }
     void resetSequencer() { sequencerResetPending.store(true, std::memory_order_release); }
+    void setPlayPage(int page);
+    void copyPageAtoB();
 
     XTSequencer   sequencer;
     double currentSampleRate = 44100.0;
@@ -75,6 +77,9 @@ public:
     int  lastStep            = -1;
     int  sequencerStepOffset = 0;
     std::atomic<bool> sequencerResetPending { false };
+
+    // Pattern pages (0 = A, 1 = B)
+    std::atomic<int>  playPage { 0 };
 
     // Internal transport
     std::atomic<bool> internalTransportRunning { false };

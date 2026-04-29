@@ -165,7 +165,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     params.push_back(std::make_unique<juce::AudioParameterFloat>("tempo", "Tempo", tempoRange, 120.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("swing", "Swing", 0.0f, 0.5f, 0.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("stepCount", "Step Count",
-        juce::NormalisableRange<float>(1.0f, 16.0f, 1.0f), 16.0f));
+        juce::NormalisableRange<float>(1.0f, 8.0f, 1.0f), 8.0f));
 
     auto noiseDecayRange = juce::NormalisableRange<float>(0.01f, 2.0f);
     noiseDecayRange.setSkewForCentre(0.40f);
@@ -422,6 +422,22 @@ void XTProcessor::applyMidiCc(int ccNumber, int ccValue)
     }
 }
 
+void XTProcessor::setPlayPage(int page)
+{
+    playPage.store(juce::jlimit(0, 1, page), std::memory_order_release);
+    sequencerResetPending.store(true, std::memory_order_release);
+}
+
+void XTProcessor::copyPageAtoB()
+{
+    const char* prefixes[] = { "stepPitch", "stepVel", "stepModA", "stepModB", "stepModC", "stepActive" };
+    for (const char* prefix : prefixes)
+        for (int i = 0; i < 8; ++i)
+            if (auto* src = apvts.getParameter(makeStepParameterId(prefix, i)))
+                if (auto* dst = apvts.getParameter(makeStepParameterId(prefix, i + 8)))
+                    dst->setValueNotifyingHost(src->getValue());
+}
+
 // =============================================================================
 
 void XTProcessor::prepareToPlay(double sampleRate, int)
@@ -503,7 +519,8 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     float mult       = multTable[juce::jlimit(0, 9, multIndex)];
     float ppqPerStep = 0.25f * mult;
 
-    int stepCount    = juce::jlimit(1, 16, (int)apvts.getRawParameterValue("stepCount")->load());
+    int stepCount    = juce::jlimit(1, 8, (int)apvts.getRawParameterValue("stepCount")->load());
+    int pageOffset   = playPage.load(std::memory_order_relaxed) * 8;
 
     float cutoffVal    = apvts.getRawParameterValue("cutoff")->load();
     float resVal       = apvts.getRawParameterValue("resonance")->load();
@@ -626,7 +643,7 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
                 if (intRunning) internalPpq = 0.0;
             }
 
-            int currentStep = (hostStep + sequencerStepOffset) % stepCount;
+            int currentStep = (hostStep + sequencerStepOffset) % stepCount + pageOffset;
 
             if (currentStep != lastStep)
             {

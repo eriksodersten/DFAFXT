@@ -478,13 +478,24 @@ XTEditor::XTEditor(XTProcessor& p)
     resetButton.onClick = [this]()
     {
         xtProcessor.resetSequencer();
-        currentLedStep  = 0;
+        currentLedStep  = editPage * 8;
         resetLedActive  = true;
         repaint();
     };
     resetButton.setButtonText({});
     resetButton.setTooltip("Reset Sequencer");
     addAndMakeVisible(resetButton);
+
+    // --- Pattern page buttons ---
+    pageAButton.setClickingTogglesState(true);
+    pageBButton.setClickingTogglesState(true);
+    copyPageButton.setClickingTogglesState(false);
+    pageAButton.onClick = [this]() { switchEditPage(0); };
+    pageBButton.onClick = [this]() { switchEditPage(1); };
+    copyPageButton.onClick = [this]() { xtProcessor.copyPageAtoB(); };
+    addAndMakeVisible(pageAButton);
+    addAndMakeVisible(pageBButton);
+    addAndMakeVisible(copyPageButton);
 
     // --- Knobs / combos ---
     auto addKnob   = [this](XTSlider&   s) { setupKnob(s);   addAndMakeVisible(s); };
@@ -780,6 +791,27 @@ juce::String XTEditor::getModLaneSubtitle(int modLaneIndex) const
     return text;
 }
 
+void XTEditor::switchEditPage(int page)
+{
+    editPage = juce::jlimit(0, 1, page);
+    pageAButton.setToggleState(editPage == 0, juce::dontSendNotification);
+    pageBButton.setToggleState(editPage == 1, juce::dontSendNotification);
+
+    for (int i = 0; i < 8; ++i)
+    {
+        const bool showA = (editPage == 0);
+        stepPitch[i].setVisible(showA);        stepVelocity[i].setVisible(showA);
+        stepModA[i].setVisible(showA);         stepModB[i].setVisible(showA);
+        stepModC[i].setVisible(showA);         stepActiveButton[i].setVisible(showA);
+
+        stepPitch[i + 8].setVisible(!showA);   stepVelocity[i + 8].setVisible(!showA);
+        stepModA[i + 8].setVisible(!showA);    stepModB[i + 8].setVisible(!showA);
+        stepModC[i + 8].setVisible(!showA);    stepActiveButton[i + 8].setVisible(!showA);
+    }
+
+    xtProcessor.setPlayPage(editPage);
+}
+
 void XTEditor::timerCallback()
 {
     const auto cur = xtProcessor.getCurrentPresetName();
@@ -979,8 +1011,9 @@ void XTEditor::paint(juce::Graphics& g)
 
     // Step counter display
     const auto stepDisplayBounds = ref(74.0f, 754.0f, 196.0f, 78.0f);
-    const auto stepDisplay = juce::String::formatted("%02d/16",
-        juce::jlimit(1, XTSequencer::numSteps, currentLedStep >= 0 ? currentLedStep + 1 : 1));
+    const int pageRelStep = currentLedStep - editPage * 8;
+    const auto stepDisplay = juce::String::formatted("%d/8",
+        juce::jlimit(1, 8, pageRelStep >= 0 ? pageRelStep + 1 : 1));
 
     g.setColour(kDarkPlate);
     g.fillRoundedRectangle(stepDisplayBounds.toFloat(), 4.0f);
@@ -1005,7 +1038,7 @@ void XTEditor::paint(juce::Graphics& g)
 
         g.setColour(kInk);
         g.setFont(juce::FontOptions(9.0f).withStyle("Bold"));
-        g.drawText(juce::String(i + 1),
+        g.drawText(juce::String((i % 8) + 1),
                    juce::Rectangle<float>(centreX - 12.0f, padY - 18.0f, 24.0f, 10.0f),
                    juce::Justification::centred, false);
 
@@ -1147,18 +1180,22 @@ void XTEditor::resized()
     advanceButton.setBounds( ref(140.0f, 651.0f, 34.0f, 24.0f));
     resetButton.setBounds(   ref(191.0f, 651.0f, 34.0f, 24.0f));
 
+    pageAButton.setBounds(   ref(40.0f,  690.0f, 44.0f, 24.0f));
+    pageBButton.setBounds(   ref(100.0f, 690.0f, 44.0f, 24.0f));
+    copyPageButton.setBounds(ref(160.0f, 690.0f, 54.0f, 24.0f));
+
     stepCountSlider.setBounds(ref(164.0f, 725.0f, 38.0f, 38.0f));  // was placeholder
 
-    // --- SEQUENCER ---
+    // --- SEQUENCER --- 8 steps per page, page A (0-7) and B (8-15) share same screen positions
     const float stepLeft     = 525.0f;
-    const float stepStride   = 74.7f;
+    const float stepStride   = 140.0f;   // was 74.7 — doubled for 8-step layout
     const float stepKnobTop  = 620.0f;
-    const float stepKnobSize = 40.0f;
-    const float stepRowStride= 52.0f;
+    const float stepKnobSize = 56.0f;    // was 40 — larger for better feel
+    const float stepRowStride= 60.0f;    // was 52
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
-        const float x = stepLeft + (float)i * stepStride;
+        const float x = stepLeft + (float)(i % 8) * stepStride;  // both pages share columns 0-7
         stepPitch[i].setBounds(   ref(x, stepKnobTop,                    stepKnobSize, stepKnobSize));
         stepVelocity[i].setBounds(ref(x, stepKnobTop + stepRowStride,     stepKnobSize, stepKnobSize));
         stepModA[i].setBounds(    ref(x, stepKnobTop + stepRowStride*2.f, stepKnobSize, stepKnobSize));
@@ -1170,4 +1207,6 @@ void XTEditor::resized()
         const int padTop = pitchBounds.getY() - 39;
         stepActiveButton[i].setBounds(cx - 12, padTop, 24, 24);
     }
+
+    switchEditPage(editPage);  // apply initial visibility
 }
