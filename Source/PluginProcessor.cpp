@@ -49,9 +49,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     params.push_back(std::make_unique<juce::AudioParameterFloat>("vco2Freq",   "VCO 2 Freq", 1.0f,  2000.0f, 330.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("vco2EgAmt",  "VCO 2 EG Amt", -60.0f, 60.0f, 0.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("noiseLevel", "Noise Level", 0.0f, 1.0f, 0.2f));
-    auto noiseDecayRange = juce::NormalisableRange<float>(0.01f, 2.0f);
-    noiseDecayRange.setSkewForCentre(0.40f);
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("noiseDecay", "Noise Decay", noiseDecayRange, 0.3f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("vco1Level",  "VCO 1 Level", 0.0f, 1.0f, 0.6f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("vco2Level",  "VCO 2 Level", 0.0f, 1.0f, 0.2f));
 
@@ -386,7 +383,6 @@ void XTProcessor::initialiseMidiCcBindings()
     // New params
     add(cc++, "vco2Decay");        add(cc++, "vcoEgShape");
     add(cc++, "noiseColor");       add(cc++, "velVcfDecaySens");
-    add(cc++, "noiseDecay");
     add(cc++, "pitchFmAmt");       add(cc++, "tempo");
     add(cc++, "swing");            add(cc++, "stepCount");
 
@@ -530,7 +526,6 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     XTModDestination lfoDestVal = choiceToModDestination(
         (int)apvts.getRawParameterValue("lfoDest")->load());
     float noiseColorVal     = apvts.getRawParameterValue("noiseColor")->load();
-    float noiseDecayVal     = apvts.getRawParameterValue("noiseDecay")->load();
     float velVcfDecaySensVal= apvts.getRawParameterValue("velVcfDecaySens")->load();
     float pitchFmAmtVal     = apvts.getRawParameterValue("pitchFmAmt")->load();
     int   vcoEgShapeVal     = (int)apvts.getRawParameterValue("vcoEgShape")->load();
@@ -565,7 +560,6 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     voice.setClickLevel(clickLevelVal);
     voice.setVcoEgShape(vcoEgShapeVal);
     voice.setNoiseColor(noiseColorVal);
-    voice.setNoiseDecayTime(noiseDecayVal);
     voice.setVelVcfDecaySens(velVcfDecaySensVal);
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
