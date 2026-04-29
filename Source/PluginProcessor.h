@@ -93,7 +93,6 @@ public:
     float currentPitch    = 0.0f;
     float currentModA     = 0.0f;
     float currentModB     = 0.0f;
-    float currentModC     = 0.0f;
 
     juce::RangedAudioParameter* vcfDecayParam = nullptr;
     juce::RangedAudioParameter* vcaDecayParam = nullptr;
@@ -123,7 +122,7 @@ private:
     std::unique_ptr<juce::XmlElement> createStateXml();
     void restoreStateFromXml(const juce::XmlElement& xml, const juce::String& presetNameOverride);
 
-    static constexpr size_t kNumMidiCcBindings = 145;
+    static constexpr size_t kNumMidiCcBindings = 128;
     void initialiseMidiCcBindings();
     void applyMidiCc(int ccNumber, int ccValue);
 

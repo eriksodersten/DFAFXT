@@ -6,7 +6,7 @@ namespace
 constexpr auto kInitPresetName    = "Init";
 constexpr auto kPresetExtension   = ".dfafxtpreset";
 constexpr auto kPresetNameAttribute = "currentPresetName";
-constexpr int  kNumModRoutes = 3;
+constexpr int  kNumModRoutes = 2;
 
 juce::String makeStepParameterId(const char* prefix, int index)
 {
@@ -101,8 +101,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
             makeStepParameterId("stepModA", i),  "Step Mod A " + stepNumber, 0.0f, 1.0f, 0.5f));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             makeStepParameterId("stepModB", i),  "Step Mod B " + stepNumber, 0.0f, 1.0f, 0.5f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            makeStepParameterId("stepModC", i),  "Step Mod C " + stepNumber, 0.0f, 1.0f, 0.5f));
     }
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>("seqPitchMod", "SEQ Pitch Mod",
@@ -139,7 +137,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     juce::StringArray modModes { "UNI", "BI", "INV" };
     params.push_back(std::make_unique<juce::AudioParameterChoice>("modAMode", "Mod A Mode", modModes, 1));
     params.push_back(std::make_unique<juce::AudioParameterChoice>("modBMode", "Mod B Mode", modModes, 1));
-    params.push_back(std::make_unique<juce::AudioParameterChoice>("modCMode", "Mod C Mode", modModes, 1));
 
     // LFO
     auto lfoRateRange = juce::NormalisableRange<float>(0.01f, 20.0f);
@@ -375,13 +372,11 @@ void XTProcessor::initialiseMidiCcBindings()
     for (int i = 0; i < XTSequencer::numSteps; ++i) add(cc++, makeStepParameterId("stepVel",   i));
     for (int i = 0; i < XTSequencer::numSteps; ++i) add(cc++, makeStepParameterId("stepModA",  i));
     for (int i = 0; i < XTSequencer::numSteps; ++i) add(cc++, makeStepParameterId("stepModB",  i));
-    for (int i = 0; i < XTSequencer::numSteps; ++i) add(cc++, makeStepParameterId("stepModC",  i));
-
     add(cc++, "seqPitchMod");  add(cc++, "hardSync");    add(cc++, "vco1Wave");
     add(cc++, "vco2Wave");     add(cc++, "vcfMode");      add(cc++, "clockMult");
     add(cc++, "clickTune");    add(cc++, "clickDecay");   add(cc++, "clickLevel");
     add(cc++, "vcaAttack");    add(cc++, "preDrive");     add(cc++, "postDrive");
-    add(cc++, "modAMode");     add(cc++, "modBMode");     add(cc++, "modCMode");
+    add(cc++, "modAMode");     add(cc++, "modBMode");
     add(cc++, "lfoRate");      add(cc++, "lfoWave");      add(cc++, "lfoSync");
     add(cc++, "lfoRetrig");    add(cc++, "lfoDest");      add(cc++, "lfoAmt");
 
@@ -430,7 +425,7 @@ void XTProcessor::setPlayPage(int page)
 
 void XTProcessor::copyPageAtoB()
 {
-    const char* prefixes[] = { "stepPitch", "stepVel", "stepModA", "stepModB", "stepModC", "stepActive" };
+    const char* prefixes[] = { "stepPitch", "stepVel", "stepModA", "stepModB", "stepActive" };
     for (const char* prefix : prefixes)
         for (int i = 0; i < 8; ++i)
             if (auto* src = apvts.getParameter(makeStepParameterId(prefix, i)))
@@ -548,7 +543,6 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     float postDriveVal = apvts.getRawParameterValue("postDrive")->load();
     int   modAModeVal  = (int)apvts.getRawParameterValue("modAMode")->load();
     int   modBModeVal  = (int)apvts.getRawParameterValue("modBMode")->load();
-    int   modCModeVal  = (int)apvts.getRawParameterValue("modCMode")->load();
     float lfoRateVal   = apvts.getRawParameterValue("lfoRate")->load();
     int   lfoWaveVal   = (int)apvts.getRawParameterValue("lfoWave")->load();
     bool  lfoSyncVal   = apvts.getRawParameterValue("lfoSync")->load() > 0.5f;
@@ -605,8 +599,7 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
             apvts.getRawParameterValue(makeStepParameterId("stepPitch", i))->load(),
             apvts.getRawParameterValue(makeStepParameterId("stepVel",   i))->load(),
             apvts.getRawParameterValue(makeStepParameterId("stepModA",  i))->load(),
-            apvts.getRawParameterValue(makeStepParameterId("stepModB",  i))->load(),
-            apvts.getRawParameterValue(makeStepParameterId("stepModC",  i))->load());
+            apvts.getRawParameterValue(makeStepParameterId("stepModB",  i))->load());
     }
 
     auto applyModMode = [](float raw, int mode) -> float {
@@ -654,7 +647,6 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
                 currentPitch    = (step.pitch - 60.0f) / 60.0f;
                 currentModA     = applyModMode(step.modA, modAModeVal);
                 currentModB     = applyModMode(step.modB, modBModeVal);
-                currentModC     = applyModMode(step.modC, modCModeVal);
 
                 if (lfoRetrigVal) lfoPhase = 0.0f;
 
@@ -710,7 +702,6 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
 
         applyMod(currentModA, modDestinations[0], 1.0f);
         applyMod(currentModB, modDestinations[1], 1.0f);
-        applyMod(currentModC, modDestinations[2], 1.0f);
 
         // --- LFO ---
         float lfoIncrement = lfoSyncVal

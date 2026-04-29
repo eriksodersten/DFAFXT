@@ -15,7 +15,7 @@ constexpr int kPresetMissingId   = 999;
 
 constexpr std::array<const char*, XTSequencer::numLaneRows> kSequencerLaneNames
 {
-    "PITCH", "VEL", "MOD A", "MOD B", "MOD C"
+    "PITCH", "VEL", "MOD A", "MOD B"
 };
 
 struct XTLayout
@@ -529,7 +529,7 @@ XTEditor::XTEditor(XTProcessor& p)
 
     // Modulation lanes
     const auto destNames = XTProcessor::getModDestinationNames();
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         modModeBox[i].addItem("UNI", 1); modModeBox[i].addItem("BI", 2); modModeBox[i].addItem("INV", 3);
         addChoice(modModeBox[i]);
@@ -574,9 +574,8 @@ XTEditor::XTEditor(XTProcessor& p)
         stepVelocity[i].style = XTKnobStyle::sequencer;
         stepModA[i].style     = XTKnobStyle::sequencer;
         stepModB[i].style     = XTKnobStyle::sequencer;
-        stepModC[i].style     = XTKnobStyle::sequencer;
         addKnob(stepPitch[i]);    addKnob(stepVelocity[i]);
-        addKnob(stepModA[i]);     addKnob(stepModB[i]);    addKnob(stepModC[i]);
+        addKnob(stepModA[i]);     addKnob(stepModB[i]);
     }
 
     // Step active buttons
@@ -643,7 +642,7 @@ XTEditor::XTEditor(XTProcessor& p)
     lfoRetrigBoxAtt    = std::make_unique<ComboAttachment>(apvts, "lfoRetrig",   lfoRetrigBox);
     lfoDstBoxAtt       = std::make_unique<ComboAttachment>(apvts, "lfoDest",     lfoDstBox);
 
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         modDestBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, makeModDestinationParameterId(i), modDestBox[i]);
         const auto modeId = juce::String("mod") + juce::String::charToString((juce_wchar)('A' + i)) + "Mode";
@@ -656,17 +655,14 @@ XTEditor::XTEditor(XTProcessor& p)
         const auto velId   = makeStepParameterId("stepVel",   i);
         const auto modAId  = makeStepParameterId("stepModA",  i);
         const auto modBId  = makeStepParameterId("stepModB",  i);
-        const auto modCId  = makeStepParameterId("stepModC",  i);
         stepPitchAtt[i] = std::make_unique<SliderAttachment>(apvts, pitchId, stepPitch[i]);
         stepVelAtt[i]   = std::make_unique<SliderAttachment>(apvts, velId,   stepVelocity[i]);
         stepModAAtt[i]  = std::make_unique<SliderAttachment>(apvts, modAId,  stepModA[i]);
         stepModBAtt[i]  = std::make_unique<SliderAttachment>(apvts, modBId,  stepModB[i]);
-        stepModCAtt[i]  = std::make_unique<SliderAttachment>(apvts, modCId,  stepModC[i]);
         setDefault(stepPitch[i],    pitchId);
         setDefault(stepVelocity[i], velId);
         setDefault(stepModA[i],     modAId);
         setDefault(stepModB[i],     modBId);
-        setDefault(stepModC[i],     modCId);
         const auto activeId = makeStepParameterId("stepActive", i);
         stepActiveAtt[i] = std::make_unique<ButtonAttachment>(apvts, activeId, stepActiveButton[i]);
     }
@@ -802,11 +798,11 @@ void XTEditor::switchEditPage(int page)
         const bool showA = (editPage == 0);
         stepPitch[i].setVisible(showA);        stepVelocity[i].setVisible(showA);
         stepModA[i].setVisible(showA);         stepModB[i].setVisible(showA);
-        stepModC[i].setVisible(showA);         stepActiveButton[i].setVisible(showA);
+        stepActiveButton[i].setVisible(showA);
 
         stepPitch[i + 8].setVisible(!showA);   stepVelocity[i + 8].setVisible(!showA);
         stepModA[i + 8].setVisible(!showA);    stepModB[i + 8].setVisible(!showA);
-        stepModC[i + 8].setVisible(!showA);    stepActiveButton[i + 8].setVisible(!showA);
+        stepActiveButton[i + 8].setVisible(!showA);
     }
 
     xtProcessor.setPlayPage(editPage);
@@ -970,7 +966,6 @@ void XTEditor::paint(juce::Graphics& g)
     // Modulation labels
     drawLabel("MOD A", 1173, 154, 52);
     drawLabel("MOD B", 1256, 154, 52);
-    drawLabel("MOD C", 1341, 154, 52);
     drawLabel("MODE",  1160, 208, 70);
     drawLabel("MODE",  1244, 208, 70);
     drawLabel("MODE",  1328, 208, 70);
@@ -1001,7 +996,7 @@ void XTEditor::paint(juce::Graphics& g)
 
     // Sequencer labels
     drawLabel("SEQUENCER", 495, 454, 98, juce::Justification::left);
-    drawMuted("16 STEPS  -  PITCH  -  VELOCITY  -  MOD A  -  MOD B  -  MOD C",
+    drawMuted("8 STEPS × 2 PAGES  -  PITCH  -  VELOCITY  -  MOD A  -  MOD B",
               602, 456, 360, juce::Justification::left);
     drawMuted("PLAYHEAD", 407, 492, 64, juce::Justification::left);
     line(404,509,1650,509, 0.8f);
@@ -1153,7 +1148,7 @@ void XTEditor::resized()
     vcaEg.setVisible(false);
 
     // --- MODULATION ---
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         const float bx = 1160.0f + (float)i * 84.0f;
         modModeBox[i].setBounds( ref(bx, 220.0f, 70.0f, 26.0f));
@@ -1200,7 +1195,6 @@ void XTEditor::resized()
         stepVelocity[i].setBounds(ref(x, stepKnobTop + stepRowStride,     stepKnobSize, stepKnobSize));
         stepModA[i].setBounds(    ref(x, stepKnobTop + stepRowStride*2.f, stepKnobSize, stepKnobSize));
         stepModB[i].setBounds(    ref(x, stepKnobTop + stepRowStride*3.f, stepKnobSize, stepKnobSize));
-        stepModC[i].setBounds(    ref(x, stepKnobTop + stepRowStride*4.f, stepKnobSize, stepKnobSize));
 
         auto pitchBounds = ref(x, stepKnobTop, stepKnobSize, stepKnobSize);
         const int cx     = pitchBounds.getCentreX();

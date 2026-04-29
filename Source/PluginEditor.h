@@ -142,8 +142,8 @@ private:
     XTSlider postDrive   { XTKnobStyle::main };
 
     // Modulation
-    XTComboBox modModeBox[3]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
-    XTComboBox modDestBox[3]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
+    XTComboBox modModeBox[2]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
+    XTComboBox modDestBox[2]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
 
     // LFO
     XTSlider   lfoRate    { XTKnobStyle::main };
@@ -194,7 +194,6 @@ private:
     XTSlider stepVelocity[XTSequencer::numSteps];
     XTSlider stepModA[XTSequencer::numSteps];
     XTSlider stepModB[XTSequencer::numSteps];
-    XTSlider stepModC[XTSequencer::numSteps];
 
     int  currentLedStep  = -1;
     bool resetLedActive  = false;
@@ -217,11 +216,10 @@ private:
     std::unique_ptr<SliderAttachment> stepVelAtt[XTSequencer::numSteps];
     std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps];
     std::unique_ptr<SliderAttachment> stepModBAtt[XTSequencer::numSteps];
-    std::unique_ptr<SliderAttachment> stepModCAtt[XTSequencer::numSteps];
 
     std::unique_ptr<ComboAttachment> seqPitchModBoxAtt, hardSyncBoxAtt;
     std::unique_ptr<ComboAttachment> vco1WaveBoxAtt, vco2WaveBoxAtt, vcfModeBoxAtt, clockMultBoxAtt;
-    std::unique_ptr<ComboAttachment> modDestBoxAtt[3], modModeBoxAtt[3];
+    std::unique_ptr<ComboAttachment> modDestBoxAtt[2], modModeBoxAtt[2];
     std::unique_ptr<ComboAttachment> lfoWaveBoxAtt, lfoSyncBoxAtt, lfoRetrigBoxAtt, lfoDstBoxAtt;
     std::unique_ptr<ComboAttachment> vcoEgShapeBoxAtt;
     std::unique_ptr<ButtonAttachment> stepActiveAtt[XTSequencer::numSteps];
