@@ -22,7 +22,7 @@ done
 
 mkdir -p "$HOME/Library/Audio/Plug-Ins/Components" "$HOME/Library/Audio/Plug-Ins/VST3"
 
-"$CMAKE_BIN" -S "$PROJECT_ROOT" -B "$BUILD_DIR"
+"$CMAKE_BIN" -S "$PROJECT_ROOT" -B "$BUILD_DIR" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
 "$CMAKE_BIN" --build "$BUILD_DIR" --target DFAFXT_AU DFAFXT_VST3
 
 if [ ! -d "$AU_BUNDLE" ]; then
