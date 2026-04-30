@@ -957,15 +957,6 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("VOLUME",    1020, 344, 84);
     drawLabel("POST DRV",  1094, 344, 76);
 
-    // Modulation labels
-    drawLabel("MOD A", 1173, 154, 52);
-    drawLabel("MOD B", 1256, 154, 52);
-    drawLabel("MODE",  1160, 208, 70);
-    drawLabel("MODE",  1244, 208, 70);
-    drawLabel("MODE",  1328, 208, 70);
-    drawLabel("DEST",  1160, 258, 70);
-    drawLabel("DEST",  1244, 258, 70);
-    drawLabel("DEST",  1328, 258, 70);
 
     // LFO labels
     drawLabel("RATE",   1480, 241, 54);
@@ -1049,14 +1040,11 @@ void XTEditor::paint(juce::Graphics& g)
     // Sequencer lane labels
     for (int row = 0; row < XTSequencer::numLaneRows; ++row)
     {
-        juce::String subtitle = row == 0 ? "semitones"
-                              : row == 1 ? "accent"
-                              : getModLaneSubtitle(row - 2).toLowerCase();
-        if (subtitle.isEmpty()) subtitle = "assign";
+        const bool isModLane = row >= 2;
 
         const auto first = stepPitch[0].getBounds().translated(0, row * 39);
         auto plate = juce::Rectangle<float>((float)first.getX() - 120.0f, (float)first.getY() - 3.0f,
-                                            62.0f, 40.0f);
+                                            82.0f, 40.0f);
         g.setColour(kDarkPlate);
         g.fillRoundedRectangle(plate, 3.0f);
         g.setColour(kDarkEdge);
@@ -1064,12 +1052,18 @@ void XTEditor::paint(juce::Graphics& g)
         g.setColour(juce::Colour(0xffefe7d8));
         g.setFont(juce::FontOptions(10.5f).withStyle("Bold"));
         g.drawText(kSequencerLaneNames[(size_t)row],
-                   juce::Rectangle<int>((int)plate.getX()+10, (int)plate.getY()+7, (int)plate.getWidth()-20, 12),
+                   juce::Rectangle<int>((int)plate.getX()+8, (int)plate.getY()+5, (int)plate.getWidth()-16, 12),
                    juce::Justification::left, false);
-        g.setFont(juce::FontOptions(8.0f));
-        g.drawText(subtitle,
-                   juce::Rectangle<int>((int)plate.getX()+10, (int)plate.getY()+21, (int)plate.getWidth()-20, 10),
-                   juce::Justification::left, false);
+
+        // Subtitle only for non-mod lanes; mod lanes show a dest combo widget instead
+        if (!isModLane)
+        {
+            const juce::String subtitle = row == 0 ? "semitones" : "accent";
+            g.setFont(juce::FontOptions(8.0f));
+            g.drawText(subtitle,
+                       juce::Rectangle<int>((int)plate.getX()+8, (int)plate.getY()+20, (int)plate.getWidth()-16, 10),
+                       juce::Justification::left, false);
+        }
     }
 }
 
@@ -1141,12 +1135,6 @@ void XTEditor::resized()
     postDrive.setBounds(  ref(1108.0f,272.0f, 62.0f, 62.0f));
     vcaEg.setVisible(false);
 
-    // --- MODULATION ---
-    for (int i = 0; i < 2; ++i)
-    {
-        const float bx = 1160.0f + (float)i * 84.0f;
-        modDestBox[i].setBounds( ref(bx, 245.0f, 70.0f, 26.0f));
-    }
 
     // --- LFO ---
     lfoRate.setBounds(    ref(1480.0f, 178.0f, 54.0f, 54.0f));
@@ -1193,6 +1181,16 @@ void XTEditor::resized()
         const int cx     = pitchBounds.getCentreX();
         const int padTop = pitchBounds.getY() - 39;
         stepActiveButton[i].setBounds(cx - 12, padTop, 24, 24);
+    }
+
+    // Mod dest combos — inline in the sequencer lane header plates for MOD A/B rows
+    {
+        auto modARef = stepModA[0].getBounds();
+        auto modBRef = stepModB[0].getBounds();
+        const int plateX = modARef.getX() - 108;
+        const int plateW = 80;
+        modDestBox[0].setBounds(plateX, modARef.getY() + 18, plateW, 18);
+        modDestBox[1].setBounds(plateX, modBRef.getY() + 18, plateW, 18);
     }
 
     switchEditPage(editPage);  // apply initial visibility
