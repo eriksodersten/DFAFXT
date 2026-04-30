@@ -550,7 +550,6 @@ XTEditor::XTEditor(XTProcessor& p)
 
     // Transport sliders
     addKnob(tempoSlider); addKnob(swingSlider);
-    setupKnob(stepCountSlider);  // keep param active but not shown
 
     // Step lanes
     for (int i = 0; i < XTSequencer::numSteps; ++i)
@@ -613,7 +612,6 @@ XTEditor::XTEditor(XTProcessor& p)
     lfoAmtAtt         = std::make_unique<SliderAttachment>(apvts, "lfoAmt",      lfoAmt);
     tempoAtt          = std::make_unique<SliderAttachment>(apvts, "tempo",       tempoSlider);
     swingAtt          = std::make_unique<SliderAttachment>(apvts, "swing",       swingSlider);
-    stepCountAtt      = std::make_unique<SliderAttachment>(apvts, "stepCount",   stepCountSlider);
 
     seqPitchModBoxAtt  = std::make_unique<ComboAttachment>(apvts, "seqPitchMod", seqPitchModBox);
     hardSyncBoxAtt     = std::make_unique<ComboAttachment>(apvts, "hardSync",    hardSyncBox);
@@ -904,23 +902,18 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("DECAY",  351, 388, 46);
 
     // --- MIXER labels ---
-    // CLICK row
-    drawLabel("CLICK", 493, 148, 50, juce::Justification::left);
-    drawLabel("CLK TUN", 510, 244, 56);
-    drawLabel("CLK DEC", 583, 244, 56);
-    drawLabel("CLK LVL", 656, 244, 56);
-    // NOISE row
-    drawLabel("NOISE", 493, 252, 50, juce::Justification::left);
-    drawLabel("NOISE",   510, 331, 52);
-    drawLabel("COLOR",   583, 331, 52);
-    drawLabel("N.DEC",   656, 331, 52);
-    // FM + coupling row
-    drawLabel("FM AMT",  510, 417, 56);
-    drawLabel("PTH>FM",  583, 417, 52);
-    drawLabel("VEL>VCF", 656, 417, 56);
+    drawLabel("CLK TUNE", 510, 244, 60);
+    drawLabel("CLK DEC",  583, 244, 56);
+    drawLabel("CLK LVL",  656, 244, 56);
+    drawLabel("NOISE",    510, 331, 52);
+    drawLabel("COLOR",    583, 331, 52);
+    drawLabel("N.DEC",    656, 331, 52);
+    drawLabel("FM AMT",   510, 417, 56);
+    drawLabel("PTH>FM",   583, 417, 52);
+    drawLabel("VEL>VCF",  656, 417, 56);
 
     // --- FILTER labels ---
-    drawLabel("MODE",       820, 134, 64);
+    drawLabel("MODE",       820, 122, 64);
     drawLabel("CUTOFF",     806, 250, 90);
     drawLabel("RESONANCE",  878, 250, 92);
     drawLabel("VCF EG AMT", 946, 250, 96);
@@ -961,7 +954,7 @@ void XTEditor::paint(juce::Graphics& g)
     // Step counter display
     const auto stepDisplayBounds = ref(50.0f, 730.0f, 240.0f, 80.0f);
     const int pageRelStep = currentLedStep - editPage * 8;
-    const auto stepDisplay = juce::String::formatted("%d/8",
+    const auto stepDisplay = juce::String::formatted("%d",
         juce::jlimit(1, 8, pageRelStep >= 0 ? pageRelStep + 1 : 1));
 
     g.setColour(kDarkPlate);
@@ -1068,7 +1061,7 @@ void XTEditor::resized()
     vco1Frequency.setBounds(ref(62.0f,  185.0f, 50.0f, 50.0f));
     vco1EgAmount.setBounds( ref(135.0f, 185.0f, 50.0f, 50.0f));
     vco1WaveBox.setBounds(  ref(205.0f, 199.0f, 58.0f, 24.0f));
-    vco1Level.setBounds(    ref(278.0f, 192.0f, 50.0f, 50.0f));
+    vco1Level.setBounds(    ref(278.0f, 185.0f, 50.0f, 50.0f));
     vcoDecay.setBounds(     ref(351.0f, 185.0f, 50.0f, 50.0f));
 
     hardSyncBox.setBounds(  ref(419.0f, 178.0f, 62.0f, 56.0f));
@@ -1097,7 +1090,7 @@ void XTEditor::resized()
     velVcfDecaySens.setBounds(ref(656.0f, 358.0f, 50.0f, 50.0f));
 
     // --- FILTER ---
-    vcfModeBox.setBounds( ref(820.0f, 143.0f, 64.0f, 26.0f));
+    vcfModeBox.setBounds( ref(820.0f, 136.0f, 64.0f, 26.0f));
     cutoff.setBounds(     ref(820.0f, 178.0f, 62.0f, 62.0f));
     resonance.setBounds(  ref(892.0f, 178.0f, 62.0f, 62.0f));
     vcfEgAmount.setBounds(ref(964.0f, 178.0f, 62.0f, 62.0f));

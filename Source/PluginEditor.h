@@ -155,7 +155,6 @@ private:
     // Transport
     XTSlider tempoSlider     { XTKnobStyle::main };
     XTSlider swingSlider     { XTKnobStyle::small };
-    XTSlider stepCountSlider { XTKnobStyle::small };
     XTTextButton runStopButton  { "RUN",     XTButtonStyle::led };
     XTTextButton triggerButton  { "TRIG",    XTButtonStyle::led };
     XTTextButton advanceButton  { "ADV",     XTButtonStyle::led };
@@ -210,7 +209,7 @@ private:
     std::unique_ptr<SliderAttachment> noiseDecayAtt;
     std::unique_ptr<ButtonAttachment> noiseVcfBypassAtt, clickVcfBypassAtt;
     std::unique_ptr<SliderAttachment> lfoRateAtt, lfoAmtAtt;
-    std::unique_ptr<SliderAttachment> tempoAtt, swingAtt, stepCountAtt;
+    std::unique_ptr<SliderAttachment> tempoAtt, swingAtt;
     std::unique_ptr<SliderAttachment> stepPitchAtt[XTSequencer::numSteps];
     std::unique_ptr<SliderAttachment> stepVelAtt[XTSequencer::numSteps];
     std::unique_ptr<SliderAttachment> stepModAAtt[XTSequencer::numSteps];

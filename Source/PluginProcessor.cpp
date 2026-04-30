@@ -156,8 +156,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameter
     tempoRange.setSkewForCentre(120.0f);
     params.push_back(std::make_unique<juce::AudioParameterFloat>("tempo", "Tempo", tempoRange, 120.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("swing", "Swing", 0.0f, 0.5f, 0.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("stepCount", "Step Count",
-        juce::NormalisableRange<float>(1.0f, 8.0f, 1.0f), 8.0f));
 
     auto noiseDecayRange = juce::NormalisableRange<float>(0.01f, 2.0f);
     noiseDecayRange.setSkewForCentre(0.40f);
@@ -380,7 +378,7 @@ void XTProcessor::initialiseMidiCcBindings()
     add(cc++, "vco2Decay");        add(cc++, "vcoEgShape");
     add(cc++, "noiseColor");       add(cc++, "velVcfDecaySens");
     add(cc++, "pitchFmAmt");       add(cc++, "tempo");
-    add(cc++, "swing");            add(cc++, "stepCount");
+    add(cc++, "swing");
     add(cc++, "noiseDecay");
     add(cc++, "noiseVcfBypass");
     add(cc++, "clickVcfBypass");
@@ -508,7 +506,7 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     float mult       = multTable[juce::jlimit(0, 9, multIndex)];
     float ppqPerStep = 0.25f * mult;
 
-    int stepCount    = juce::jlimit(1, 8, (int)apvts.getRawParameterValue("stepCount")->load());
+    constexpr int stepCount = 8;
     int pageOffset   = playPage.load(std::memory_order_relaxed) * 8;
 
     float cutoffVal    = apvts.getRawParameterValue("cutoff")->load();
