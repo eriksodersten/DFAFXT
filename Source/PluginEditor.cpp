@@ -860,10 +860,11 @@ void XTEditor::paint(juce::Graphics& g)
     };
     line(42, 98, 1670, 98);
     line(42, 442, 1670, 442);
-    line(806,109,806,432, 0.8f);
-    line(1360,109,1360,432, 0.8f);
-    line(1463,109,1463,432, 0.8f);
-    line(345,454,345,844, 0.8f);
+    line(490,  109, 490,  432, 0.8f);   // OSC | MIXER
+    line(806,  109, 806,  432, 0.8f);   // MIXER | FILTER
+    line(1160, 109, 1160, 432, 0.8f);   // FILTER | AMP/DRIVE
+    line(1463, 109, 1463, 432, 0.8f);   // AMP/DRIVE | LFO
+    line(345,  454, 345,  844, 0.8f);   // TRANSPORT | SEQUENCER
 
     auto drawTitle = [&](const juce::String& text, float x, float y, float w) {
         g.setColour(kInk);
@@ -893,80 +894,82 @@ void XTEditor::paint(juce::Graphics& g)
     g.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
     g.drawText("SINGLE-VOICE PERCUSSION SYNTHESIZER", ref(63,72,350,16), juce::Justification::left, false);
 
-    drawTitle("OSC / MIXER",   250, 113, 400);
-    drawTitle("FILTER / AMP",  866, 113, 252);
-    drawTitle("MODULATION",   1177, 113, 190);
-    drawTitle("LFO",          1522, 113, 82);
-    drawTitle("TRANSPORT",      95, 457, 138);
+    drawTitle("OSCILLATOR",   42,   113, 448);
+    drawTitle("MIXER",        490,  113, 316);
+    drawTitle("FILTER",       806,  113, 354);
+    drawTitle("AMP / DRIVE",  1160, 113, 303);
+    drawTitle("LFO",          1463, 113, 207);
+    drawTitle("TRANSPORT",    95,   457, 138);
 
     g.setColour(kInk);
     g.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
-    g.drawText("ANALOG  -  16 STEP  -  3 MOD  -  1 LFO",
+    g.drawText("8-STEP x 2 PAGES  -  2 MOD  -  1 LFO",
                ref(1458,39,198,12), juce::Justification::right, false);
     g.setFont(juce::FontOptions(8.0f));
     g.drawText("SERIAL NO. XT-0001", ref(1548,61,108,10), juce::Justification::right, false);
     g.drawText("MADE IN SWEDEN",     ref(1550,80,106,10), juce::Justification::right, false);
 
-    // OSC section labels
+    // --- OSCILLATOR labels ---
     drawLabel("VCO 1", 50, 148, 48, juce::Justification::left);
-    line(119,158,347,158, 0.8f);
-    drawLabel("VCO 2", 50, 287, 48, juce::Justification::left);
-    line(119,297,347,297, 0.8f);
-    drawLabel("HARD SYNC", 431, 160, 70);
+    line(119, 158, 350, 158, 0.8f);
+    drawLabel("VCO 2", 50, 288, 48, juce::Justification::left);
+    line(119, 298, 350, 298, 0.8f);
+    drawLabel("HARD SYNC", 419, 160, 70);
     drawLabel("EG SHAPE",  419, 290, 70);
 
-    drawLabel("FREQ",    62, 248, 52);
-    drawLabel("EG AMT",  135, 248, 62);
-    drawLabel("WAVE",    208, 234, 58);
-    drawLabel("LEVEL",   278, 248, 52);
-    drawLabel("DECAY",   351, 248, 52);
+    drawLabel("FREQ",   62,  248, 52);
+    drawLabel("EG AMT", 135, 248, 62);
+    drawLabel("WAVE",   208, 234, 58);
+    drawLabel("LEVEL",  278, 248, 52);
+    drawLabel("DECAY",  351, 248, 52);
 
-    drawLabel("FREQ",    62, 388, 52);
-    drawLabel("EG AMT",  135, 388, 62);
-    drawLabel("WAVE",    208, 374, 58);
-    drawLabel("LEVEL",   278, 388, 52);
-    drawLabel("DECAY",   351, 388, 46);   // was "LVL" — now vco2Decay
+    drawLabel("FREQ",   62,  388, 52);
+    drawLabel("EG AMT", 135, 388, 62);
+    drawLabel("WAVE",   208, 374, 58);
+    drawLabel("LEVEL",  278, 388, 52);
+    drawLabel("DECAY",  351, 388, 46);
 
-    // OSC / MIXER merged section
-    drawLabel("CLICK TUN", 507, 218, 60);
-    drawLabel("CLICK DEC", 580, 218, 60);
-    drawLabel("NOISE",     653, 218, 50);
-    drawLabel("COLOR",     726, 218, 50);   // noiseColor
-    drawLabel("N.DECAY",   799, 218, 50);
-    drawLabel("FM AMT",    507, 326, 68);
-    drawLabel("PTH→FM",    580, 326, 62);   // pitchFmAmt
-    drawLabel("VEL→VCF",   653, 326, 62);   // velVcfDecaySens
-    drawLabel("CLK LVL",   726, 326, 64);
-    drawLabel("N.BYPASS",  799, 299, 60);
-    drawLabel("C.BYPASS",  799, 343, 60);
-    drawLabel("SIGNAL FLOW", 608, 380, 90);
-    g.setColour(kDivider.withAlpha(0.6f));
-    g.drawRoundedRectangle(ref(526,388,249,32).toFloat(), 3.0f, 0.8f);
-    drawMuted("VCO1 + VCO2 + NOISE + CLICK → FILTER → DRIVE → VCA → OUT", 531, 399, 238);
+    // --- MIXER labels ---
+    // CLICK row
+    drawLabel("CLICK", 493, 148, 50, juce::Justification::left);
+    drawLabel("CLK TUN", 510, 244, 56);
+    drawLabel("CLK DEC", 583, 244, 56);
+    drawLabel("CLK LVL", 656, 244, 56);
+    // NOISE row
+    drawLabel("NOISE", 493, 252, 50, juce::Justification::left);
+    drawLabel("NOISE",   510, 331, 52);
+    drawLabel("COLOR",   583, 331, 52);
+    drawLabel("N.DEC",   656, 331, 52);
+    // FM + coupling row
+    drawLabel("FM AMT",  510, 417, 56);
+    drawLabel("PTH>FM",  583, 417, 52);
+    drawLabel("VEL>VCF", 656, 417, 56);
 
-    // Filter / amp labels
-    drawLabel("MODE",       816, 134, 68);
+    // --- FILTER labels ---
+    drawLabel("MODE",       820, 134, 64);
     drawLabel("CUTOFF",     806, 250, 90);
     drawLabel("RESONANCE",  878, 250, 92);
     drawLabel("VCF EG AMT", 946, 250, 96);
     drawLabel("VCF DEC",   1020, 250, 84);
-    drawLabel("PRE DRV",   1094, 250, 76);
     drawLabel("NOISE MOD",  806, 344, 84);
-    drawLabel("VCA ATCK",   878, 344, 84);
-    drawLabel("VCA DEC",    946, 344, 76);
-    drawLabel("VOLUME",    1020, 344, 84);
-    drawLabel("POST DRV",  1094, 344, 76);
+
+    // --- AMP / DRIVE labels ---
+    drawLabel("VCA ATCK",  1168, 250, 84);
+    drawLabel("VCA DEC",   1240, 250, 76);
+    drawLabel("VOLUME",    1312, 250, 84);
+    drawLabel("PRE DRV",   1168, 344, 76);
+    drawLabel("POST DRV",  1240, 344, 76);
 
 
-    // LFO labels
+    // --- LFO labels ---
     drawLabel("RATE",   1480, 241, 54);
     drawLabel("AMT",    1557, 241, 54);
-    drawLabel("WAVE",   1480, 288, 70);
-    drawLabel("DEST",   1480, 334, 70);
-    drawLabel("SYNC",   1558, 296, 46);
-    drawLabel("RETRIG", 1558, 348, 46);
+    drawLabel("WAVE",   1476, 288, 70);
+    drawLabel("DEST",   1476, 334, 70);
+    drawLabel("SYNC",   1556, 296, 50);
+    drawLabel("RETRIG", 1556, 348, 50);
 
-    // Transport labels
+    // --- TRANSPORT labels ---
     drawLabel("TEMPO",     78,  488, 56);
     drawLabel("SWING",    182,  488, 56);
     drawMuted("BPM",      101,  596, 32);
@@ -977,14 +980,13 @@ void XTEditor::paint(juce::Graphics& g)
     drawMuted("ADVANCE",   137, 705, 54, juce::Justification::left);
     drawMuted("RESET",     191, 705, 42, juce::Justification::left);
     drawLabel("STEP COUNT", 93, 757, 78);
-    drawMuted("1 - 16",    104, 775, 56);
+    drawMuted("1 - 8",     108, 775, 48);
 
-    // Sequencer labels
+    // --- SEQUENCER labels ---
     drawLabel("SEQUENCER", 495, 454, 98, juce::Justification::left);
-    drawMuted("8 STEPS × 2 PAGES  -  PITCH  -  VELOCITY  -  MOD A  -  MOD B",
+    drawMuted("8 STEPS x 2 PAGES  -  PITCH  -  VELOCITY  -  MOD A  -  MOD B",
               602, 456, 360, juce::Justification::left);
-    drawMuted("PLAYHEAD", 407, 492, 64, juce::Justification::left);
-    line(404,509,1650,509, 0.8f);
+    line(404, 509, 1650, 509, 0.8f);
 
     drawMutedLabel(g, { presetBox.getX() - 54, presetBox.getY() + 5, 46, 10 },
                    "PRESET", juce::Justification::centredRight);
@@ -1108,33 +1110,37 @@ void XTEditor::resized()
     vco2Level.setBounds(    ref(278.0f, 325.0f, 50.0f, 50.0f));
     vco2Decay.setBounds(    ref(351.0f, 325.0f, 50.0f, 50.0f));   // was placeholder
 
-    // --- OSC / MIXER (click + noise) ---
-    clickTune.setBounds(    ref(507.0f, 166.0f, 50.0f, 50.0f));
-    clickDecay.setBounds(   ref(580.0f, 166.0f, 50.0f, 50.0f));
-    noiseLevel.setBounds(   ref(653.0f, 166.0f, 50.0f, 50.0f));
-    noiseColor.setBounds(   ref(726.0f, 166.0f, 50.0f, 50.0f));
-    noiseDecay.setBounds(   ref(799.0f, 166.0f, 50.0f, 50.0f));
-    noiseVcfBypassButton.setBounds(ref(790.0f, 272.0f, 54.0f, 24.0f));
-    clickVcfBypassButton.setBounds(ref(790.0f, 316.0f, 54.0f, 24.0f));
-    fmAmount.setBounds(     ref(507.0f, 272.0f, 50.0f, 50.0f));
-    pitchFmAmt.setBounds(   ref(580.0f, 272.0f, 50.0f, 50.0f));   // new
-    velVcfDecaySens.setBounds(ref(653.0f, 272.0f, 50.0f, 50.0f)); // new
-    clickLevel.setBounds(   ref(726.0f, 272.0f, 50.0f, 50.0f));
+    // --- MIXER ---
+    // Row 1: CLICK chain
+    clickTune.setBounds(    ref(510.0f, 185.0f, 50.0f, 50.0f));
+    clickDecay.setBounds(   ref(583.0f, 185.0f, 50.0f, 50.0f));
+    clickLevel.setBounds(   ref(656.0f, 185.0f, 50.0f, 50.0f));
+    clickVcfBypassButton.setBounds(ref(729.0f, 198.0f, 54.0f, 24.0f));
+    // Row 2: NOISE chain
+    noiseLevel.setBounds(   ref(510.0f, 272.0f, 50.0f, 50.0f));
+    noiseColor.setBounds(   ref(583.0f, 272.0f, 50.0f, 50.0f));
+    noiseDecay.setBounds(   ref(656.0f, 272.0f, 50.0f, 50.0f));
+    noiseVcfBypassButton.setBounds(ref(729.0f, 285.0f, 54.0f, 24.0f));
+    // Row 3: FM + coupling
+    fmAmount.setBounds(     ref(510.0f, 358.0f, 50.0f, 50.0f));
+    pitchFmAmt.setBounds(   ref(583.0f, 358.0f, 50.0f, 50.0f));
+    velVcfDecaySens.setBounds(ref(656.0f, 358.0f, 50.0f, 50.0f));
 
-    // --- FILTER / AMP ---
+    // --- FILTER ---
     vcfModeBox.setBounds( ref(820.0f, 143.0f, 64.0f, 26.0f));
     cutoff.setBounds(     ref(820.0f, 178.0f, 62.0f, 62.0f));
     resonance.setBounds(  ref(892.0f, 178.0f, 62.0f, 62.0f));
     vcfEgAmount.setBounds(ref(964.0f, 178.0f, 62.0f, 62.0f));
     vcfDecay.setBounds(   ref(1036.0f,178.0f, 62.0f, 62.0f));
-    preDrive.setBounds(   ref(1108.0f,178.0f, 62.0f, 62.0f));
     noiseVcfMod.setBounds(ref(820.0f, 272.0f, 62.0f, 62.0f));
-    vcaAttack.setBounds(  ref(892.0f, 272.0f, 62.0f, 62.0f));
-    vcaDecay.setBounds(   ref(964.0f, 272.0f, 62.0f, 62.0f));
-    volume.setBounds(     ref(1036.0f,272.0f, 62.0f, 62.0f));
-    postDrive.setBounds(  ref(1108.0f,272.0f, 62.0f, 62.0f));
     vcaEg.setVisible(false);
 
+    // --- AMP / DRIVE ---
+    vcaAttack.setBounds(  ref(1168.0f, 178.0f, 62.0f, 62.0f));
+    vcaDecay.setBounds(   ref(1240.0f, 178.0f, 62.0f, 62.0f));
+    volume.setBounds(     ref(1312.0f, 178.0f, 62.0f, 62.0f));
+    preDrive.setBounds(   ref(1168.0f, 272.0f, 62.0f, 62.0f));
+    postDrive.setBounds(  ref(1240.0f, 272.0f, 62.0f, 62.0f));
 
     // --- LFO ---
     lfoRate.setBounds(    ref(1480.0f, 178.0f, 54.0f, 54.0f));
