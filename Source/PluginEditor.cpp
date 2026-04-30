@@ -531,8 +531,6 @@ XTEditor::XTEditor(XTProcessor& p)
     const auto destNames = XTProcessor::getModDestinationNames();
     for (int i = 0; i < 2; ++i)
     {
-        modModeBox[i].addItem("UNI", 1); modModeBox[i].addItem("BI", 2); modModeBox[i].addItem("INV", 3);
-        addChoice(modModeBox[i]);
         modDestBox[i].setJustificationType(juce::Justification::centred);
         for (int item = 0; item < destNames.size(); ++item)
             modDestBox[i].addItem(destNames[item], item + 1);
@@ -643,11 +641,7 @@ XTEditor::XTEditor(XTProcessor& p)
     lfoDstBoxAtt       = std::make_unique<ComboAttachment>(apvts, "lfoDest",     lfoDstBox);
 
     for (int i = 0; i < 2; ++i)
-    {
-        modDestBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, makeModDestinationParameterId(i), modDestBox[i]);
-        const auto modeId = juce::String("mod") + juce::String::charToString((juce_wchar)('A' + i)) + "Mode";
-        modModeBoxAtt[i]  = std::make_unique<ComboAttachment>(apvts, modeId, modModeBox[i]);
-    }
+        modDestBoxAtt[i] = std::make_unique<ComboAttachment>(apvts, makeModDestinationParameterId(i), modDestBox[i]);
 
     for (int i = 0; i < XTSequencer::numSteps; ++i)
     {
@@ -1151,8 +1145,7 @@ void XTEditor::resized()
     for (int i = 0; i < 2; ++i)
     {
         const float bx = 1160.0f + (float)i * 84.0f;
-        modModeBox[i].setBounds( ref(bx, 220.0f, 70.0f, 26.0f));
-        modDestBox[i].setBounds( ref(bx, 270.0f, 70.0f, 26.0f));
+        modDestBox[i].setBounds( ref(bx, 245.0f, 70.0f, 26.0f));
     }
 
     // --- LFO ---

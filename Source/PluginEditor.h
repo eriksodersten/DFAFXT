@@ -142,7 +142,6 @@ private:
     XTSlider postDrive   { XTKnobStyle::main };
 
     // Modulation
-    XTComboBox modModeBox[2]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
     XTComboBox modDestBox[2]{ XTComboBox{XTComboStyle::led}, XTComboBox{XTComboStyle::led} };
 
     // LFO
@@ -219,7 +218,7 @@ private:
 
     std::unique_ptr<ComboAttachment> seqPitchModBoxAtt, hardSyncBoxAtt;
     std::unique_ptr<ComboAttachment> vco1WaveBoxAtt, vco2WaveBoxAtt, vcfModeBoxAtt, clockMultBoxAtt;
-    std::unique_ptr<ComboAttachment> modDestBoxAtt[2], modModeBoxAtt[2];
+    std::unique_ptr<ComboAttachment> modDestBoxAtt[2];
     std::unique_ptr<ComboAttachment> lfoWaveBoxAtt, lfoSyncBoxAtt, lfoRetrigBoxAtt, lfoDstBoxAtt;
     std::unique_ptr<ComboAttachment> vcoEgShapeBoxAtt;
     std::unique_ptr<ButtonAttachment> stepActiveAtt[XTSequencer::numSteps];
