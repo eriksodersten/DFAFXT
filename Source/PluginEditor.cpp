@@ -457,23 +457,9 @@ XTEditor::XTEditor(XTProcessor& p)
     styleButton(presetInitButton, [this]() { xtProcessor.loadInitPreset(); refreshPresetControls(); });
 
     // --- Transport buttons ---
-    runStopButton.setClickingTogglesState(true);
-    runStopButton.onClick = [this]()
-    {
-        bool running = xtProcessor.internalTransportRunning.load(std::memory_order_relaxed);
-        xtProcessor.internalTransportRunning.store(!running, std::memory_order_relaxed);
-        if (!running) xtProcessor.resetSequencer();
-        runStopButton.setToggleState(!running, juce::dontSendNotification);
-    };
-    addAndMakeVisible(runStopButton);
-
     triggerButton.setClickingTogglesState(false);
     triggerButton.onClick = [this]() { xtProcessor.triggerPending.store(true, std::memory_order_relaxed); };
     addAndMakeVisible(triggerButton);
-
-    advanceButton.setClickingTogglesState(false);
-    advanceButton.onClick = [this]() { xtProcessor.advancePending.store(true, std::memory_order_relaxed); };
-    addAndMakeVisible(advanceButton);
 
     resetButton.onClick = [this]()
     {
@@ -482,7 +468,7 @@ XTEditor::XTEditor(XTProcessor& p)
         resetLedActive  = true;
         repaint();
     };
-    resetButton.setButtonText({});
+    resetButton.setButtonText("RST");
     resetButton.setTooltip("Reset Sequencer");
     addAndMakeVisible(resetButton);
 
@@ -563,7 +549,8 @@ XTEditor::XTEditor(XTProcessor& p)
     addChoice(clockMultBox);
 
     // Transport sliders
-    addKnob(tempoSlider); addKnob(swingSlider); addKnob(stepCountSlider);
+    addKnob(tempoSlider); addKnob(swingSlider);
+    setupKnob(stepCountSlider);  // keep param active but not shown
 
     // Step lanes
     for (int i = 0; i < XTSequencer::numSteps; ++i)
@@ -773,14 +760,6 @@ void XTEditor::updatePresetButtonState()
                                   && xtProcessor.getAvailablePresetNames().contains(cur));
 }
 
-juce::String XTEditor::getModLaneSubtitle(int modLaneIndex) const
-{
-    if (!juce::isPositiveAndBelow(modLaneIndex, 3)) return {};
-    auto text = modDestBox[modLaneIndex].getText().toUpperCase().trim();
-    if (text.isEmpty() || text == "OFF") text = "ASSIGN";
-    return text;
-}
-
 void XTEditor::switchEditPage(int page)
 {
     editPage = juce::jlimit(0, 1, page);
@@ -809,11 +788,6 @@ void XTEditor::timerCallback()
 
     const int step = xtProcessor.getCurrentStep();
     if (step >= 0) resetLedActive = false;
-
-    // Sync RUN/STOP button visual state with processor
-    runStopButton.setToggleState(
-        xtProcessor.internalTransportRunning.load(std::memory_order_relaxed),
-        juce::dontSendNotification);
 
     currentLedStep = resetLedActive ? 0 : step;
     repaint();
@@ -970,17 +944,10 @@ void XTEditor::paint(juce::Graphics& g)
     drawLabel("RETRIG", 1556, 348, 50);
 
     // --- TRANSPORT labels ---
-    drawLabel("TEMPO",     78,  488, 56);
-    drawLabel("SWING",    182,  488, 56);
-    drawMuted("BPM",      101,  596, 32);
-    drawLabel("CLK MULT",  43,  604, 68);
-    drawLabel("SEQ PITCH", 124, 604, 70);
-    drawMuted("RUN / STOP", 36, 705, 66, juce::Justification::left);
-    drawMuted("TRIGGER",    89, 705, 50, juce::Justification::left);
-    drawMuted("ADVANCE",   137, 705, 54, juce::Justification::left);
-    drawMuted("RESET",     191, 705, 42, juce::Justification::left);
-    drawLabel("STEP COUNT", 93, 757, 78);
-    drawMuted("1 - 8",     108, 775, 48);
+    drawLabel("TEMPO",     75,  572, 60);
+    drawLabel("SWING",    178,  572, 56);
+    drawLabel("CLK MULT",  43,  596, 68);
+    drawLabel("SEQ PITCH", 126, 596, 70);
 
     // --- SEQUENCER labels ---
     drawLabel("SEQUENCER", 495, 454, 98, juce::Justification::left);
@@ -992,7 +959,7 @@ void XTEditor::paint(juce::Graphics& g)
                    "PRESET", juce::Justification::centredRight);
 
     // Step counter display
-    const auto stepDisplayBounds = ref(74.0f, 754.0f, 196.0f, 78.0f);
+    const auto stepDisplayBounds = ref(50.0f, 730.0f, 240.0f, 80.0f);
     const int pageRelStep = currentLedStep - editPage * 8;
     const auto stepDisplay = juce::String::formatted("%d/8",
         juce::jlimit(1, 8, pageRelStep >= 0 ? pageRelStep + 1 : 1));
@@ -1039,12 +1006,15 @@ void XTEditor::paint(juce::Graphics& g)
         g.drawEllipse(centreX - 4.5f, ledY - 4.5f, 9.0f, 9.0f, 1.0f);
     }
 
-    // Sequencer lane labels
+    // Sequencer lane labels — derive y from actual widget bounds (avoids hardcoded stride)
+    const XTSlider* laneRef[XTSequencer::numLaneRows] = {
+        &stepPitch[0], &stepVelocity[0], &stepModA[0], &stepModB[0]
+    };
     for (int row = 0; row < XTSequencer::numLaneRows; ++row)
     {
         const bool isModLane = row >= 2;
 
-        const auto first = stepPitch[0].getBounds().translated(0, row * 39);
+        const auto first = laneRef[row]->getBounds();
         auto plate = juce::Rectangle<float>((float)first.getX() - 120.0f, (float)first.getY() - 3.0f,
                                             82.0f, 40.0f);
         g.setColour(kDarkPlate);
@@ -1151,22 +1121,15 @@ void XTEditor::resized()
     lfoRetrigBox.setBounds(ref(1558.0f,300.0f, 46.0f, 40.0f));
 
     // --- TRANSPORT ---
-    tempoSlider.setBounds(  ref(60.0f,  510.0f, 58.0f, 58.0f));   // was placeholder
-    swingSlider.setBounds(  ref(168.0f, 515.0f, 52.0f, 52.0f));   // was placeholder
-    clockMultBox.setBounds( ref(43.0f,  618.0f, 68.0f, 24.0f));
-    seqPitchModBox.setBounds(ref(124.0f,618.0f, 70.0f, 24.0f));
-
-    // Transport LED buttons — RUN/STOP, TRIGGER, ADVANCE (replace drawPlaceholderBox)
-    runStopButton.setBounds( ref(40.0f,  651.0f, 34.0f, 24.0f));
-    triggerButton.setBounds( ref(90.0f,  651.0f, 34.0f, 24.0f));
-    advanceButton.setBounds( ref(140.0f, 651.0f, 34.0f, 24.0f));
-    resetButton.setBounds(   ref(191.0f, 651.0f, 34.0f, 24.0f));
-
-    pageAButton.setBounds(   ref(40.0f,  690.0f, 44.0f, 24.0f));
-    pageBButton.setBounds(   ref(100.0f, 690.0f, 44.0f, 24.0f));
-    copyPageButton.setBounds(ref(160.0f, 690.0f, 54.0f, 24.0f));
-
-    stepCountSlider.setBounds(ref(164.0f, 725.0f, 38.0f, 38.0f));  // was placeholder
+    tempoSlider.setBounds(   ref(55.0f,  500.0f, 62.0f, 62.0f));
+    swingSlider.setBounds(   ref(164.0f, 504.0f, 54.0f, 54.0f));
+    clockMultBox.setBounds(  ref(43.0f,  610.0f, 68.0f, 24.0f));
+    seqPitchModBox.setBounds(ref(126.0f, 610.0f, 70.0f, 24.0f));
+    triggerButton.setBounds( ref(43.0f,  646.0f, 60.0f, 26.0f));
+    resetButton.setBounds(   ref(120.0f, 646.0f, 60.0f, 26.0f));
+    pageAButton.setBounds(   ref(43.0f,  686.0f, 60.0f, 24.0f));
+    pageBButton.setBounds(   ref(120.0f, 686.0f, 60.0f, 24.0f));
+    copyPageButton.setBounds(ref(197.0f, 686.0f, 58.0f, 24.0f));
 
     // --- SEQUENCER --- 8 steps per page, page A (0-7) and B (8-15) share same screen positions
     const float stepLeft     = 525.0f;
