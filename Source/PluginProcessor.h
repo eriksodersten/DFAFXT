@@ -21,6 +21,8 @@ enum class XTModDestination
     VcaDecay,
     VcoDecay,
     Volume,
+    ClickTune,
+    PreDrive,
     Count
 };
 

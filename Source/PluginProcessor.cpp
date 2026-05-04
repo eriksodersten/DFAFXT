@@ -28,7 +28,8 @@ XTModDestination choiceToModDestination(int rawChoice)
 juce::StringArray XTProcessor::getModDestinationNames()
 {
     return { "OFF", "CUTOFF", "RESONANCE", "FM AMT", "NOISE",
-             "VCF DEC", "VCA DEC", "VCO DEC", "VOLUME" };
+             "VCF DEC", "VCA DEC", "VCO DEC", "VOLUME",
+             "CLK TUNE", "PRE DRV" };
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout XTProcessor::createParameterLayout()
@@ -573,7 +574,6 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     voice.setVcfEgAmount(vcfEgAmt);
     voice.setVcaEgAmount(vcaEgVal);
     voice.setVcaAttackTime(vcaAttackVal);
-    voice.setClickTune(clickTuneVal);
     voice.setClickDecay(clickDecayVal);
     voice.setClickLevel(clickLevelVal);
     voice.setVcoEgShape(vcoEgShapeVal);
@@ -664,6 +664,8 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         float directVcaDecayMod  = 0.0f;
         float directVcoDecayMod  = 0.0f;
         float directVolumeMod    = 0.0f;
+        float directClickTuneMod = 0.0f;
+        float directPreDriveMod  = 0.0f;
 
         auto applyMod = [&](float signal, XTModDestination dest, float amount)
         {
@@ -678,6 +680,8 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
                 case XTModDestination::VcaDecay:   directVcaDecayMod  += c; break;
                 case XTModDestination::VcoDecay:   directVcoDecayMod  += c; break;
                 case XTModDestination::Volume:     directVolumeMod    += c; break;
+                case XTModDestination::ClickTune:  directClickTuneMod += c; break;
+                case XTModDestination::PreDrive:   directPreDriveMod  += c; break;
                 case XTModDestination::Count:      break;
             }
         };
@@ -703,6 +707,9 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
             default: break;                                                       // RND: held above
         }
         applyMod(lfoValue, lfoDestVal, lfoAmtVal * 0.5f);
+
+        voice.setClickTune(juce::jlimit(20.0f, 8000.0f,
+            clickTuneVal * std::pow(2.0f, directClickTuneMod * 2.0f)));
 
         cutoffNow = juce::jlimit(20.0f, 20000.0f,
                         cutoffNow * std::pow(2.0f, directCutoffMod * 2.0f));
@@ -757,7 +764,8 @@ void XTProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffe
         float modulatedCutoff = juce::jlimit(20.0f, 20000.0f, noisedCutoff + vcfEgHz);
         filter.setCutoff(modulatedCutoff);
 
-        float preDriveNow  = smoothedPreDrive.getNextValue();
+        float preDriveNow  = juce::jlimit(1.0f, 10.0f,
+                                smoothedPreDrive.getNextValue() + directPreDriveMod * 4.5f);
         float postDriveNow = smoothedPostDrive.getNextValue();
         float preGain      = preTrimVal * preDriveNow;
         float preDriven    = preGain > 1.01f
