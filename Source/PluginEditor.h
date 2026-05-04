@@ -175,18 +175,6 @@ private:
     XTComboBox vcfModeBox     { XTComboStyle::led };
     XTComboBox clockMultBox   { XTComboStyle::led };
 
-    // Step active buttons
-    XTTextButton stepActiveButton[XTSequencer::numSteps] {
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led},
-        XTTextButton{"", XTButtonStyle::led}, XTTextButton{"", XTButtonStyle::led}
-    };
-
     // Sequencer step lanes
     XTSlider stepPitch[XTSequencer::numSteps];
     XTSlider stepVelocity[XTSequencer::numSteps];
@@ -220,7 +208,5 @@ private:
     std::unique_ptr<ComboAttachment> modDestBoxAtt[2];
     std::unique_ptr<ComboAttachment> lfoWaveBoxAtt, lfoSyncBoxAtt, lfoRetrigBoxAtt, lfoDstBoxAtt;
     std::unique_ptr<ComboAttachment> vcoEgShapeBoxAtt;
-    std::unique_ptr<ButtonAttachment> stepActiveAtt[XTSequencer::numSteps];
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(XTEditor)
 };

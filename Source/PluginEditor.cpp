@@ -562,14 +562,6 @@ XTEditor::XTEditor(XTProcessor& p)
         addKnob(stepModA[i]);     addKnob(stepModB[i]);
     }
 
-    // Step active buttons
-    for (int i = 0; i < XTSequencer::numSteps; ++i)
-    {
-        stepActiveButton[i].setClickingTogglesState(true);
-        stepActiveButton[i].setToggleState(true, juce::dontSendNotification);
-        addAndMakeVisible(stepActiveButton[i]);
-    }
-
     // --- APVTS attachments ---
     auto& apvts = p.apvts;
     auto setDefault = [&apvts](juce::Slider& slider, const juce::String& id)
@@ -642,8 +634,6 @@ XTEditor::XTEditor(XTProcessor& p)
         setDefault(stepVelocity[i], velId);
         setDefault(stepModA[i],     modAId);
         setDefault(stepModB[i],     modBId);
-        const auto activeId = makeStepParameterId("stepActive", i);
-        stepActiveAtt[i] = std::make_unique<ButtonAttachment>(apvts, activeId, stepActiveButton[i]);
     }
 
     vco1EgAmount.setDoubleClickReturnValue(true, 0.0);
@@ -769,11 +759,9 @@ void XTEditor::switchEditPage(int page)
         const bool showA = (editPage == 0);
         stepPitch[i].setVisible(showA);        stepVelocity[i].setVisible(showA);
         stepModA[i].setVisible(showA);         stepModB[i].setVisible(showA);
-        stepActiveButton[i].setVisible(showA);
 
         stepPitch[i + 8].setVisible(!showA);   stepVelocity[i + 8].setVisible(!showA);
         stepModA[i + 8].setVisible(!showA);    stepModB[i + 8].setVisible(!showA);
-        stepActiveButton[i + 8].setVisible(!showA);
     }
 
     xtProcessor.setPlayPage(editPage);
@@ -1122,10 +1110,6 @@ void XTEditor::resized()
         stepModA[i].setBounds(    ref(x, stepKnobTop + stepRowStride*2.f, stepKnobSize, stepKnobSize));
         stepModB[i].setBounds(    ref(x, stepKnobTop + stepRowStride*3.f, stepKnobSize, stepKnobSize));
 
-        auto pitchBounds = ref(x, stepKnobTop, stepKnobSize, stepKnobSize);
-        const int cx     = pitchBounds.getCentreX();
-        const int padTop = pitchBounds.getY() - 39;
-        stepActiveButton[i].setBounds(cx - 12, padTop, 24, 24);
     }
 
     // Mod dest combos — inline in the sequencer lane header plates for MOD A/B rows
