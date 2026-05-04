@@ -951,23 +951,6 @@ void XTEditor::paint(juce::Graphics& g)
     drawMutedLabel(g, { presetBox.getX() - 54, presetBox.getY() + 5, 46, 10 },
                    "PRESET", juce::Justification::centredRight);
 
-    // Step counter display
-    const auto stepDisplayBounds = ref(50.0f, 730.0f, 240.0f, 80.0f);
-    const int pageRelStep = currentLedStep - editPage * 8;
-    const auto stepDisplay = juce::String::formatted("%d",
-        juce::jlimit(1, 8, pageRelStep >= 0 ? pageRelStep + 1 : 1));
-
-    g.setColour(kDarkPlate);
-    g.fillRoundedRectangle(stepDisplayBounds.toFloat(), 4.0f);
-    g.setColour(juce::Colour(0xffefe7d8));
-    g.setFont(juce::FontOptions(10.0f).withStyle("Bold"));
-    g.drawText("STEP", stepDisplayBounds.getX() + 16, stepDisplayBounds.getY() + 10, 48, 12,
-               juce::Justification::left);
-    g.setColour(juce::Colour(0xffdf5b31));
-    g.setFont(juce::FontOptions(32.0f).withStyle("Bold"));
-    g.drawText(stepDisplay,
-               stepDisplayBounds.getX() + 18, stepDisplayBounds.getY() + 28,
-               stepDisplayBounds.getWidth() - 36, 32, juce::Justification::centred);
 
     // Step LEDs and step numbers
     for (int i = 0; i < XTSequencer::numSteps; ++i)
